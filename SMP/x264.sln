@@ -1,6 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-VisualStudioVersion = 12.0.30501.0
+# Visual Studio 15
+VisualStudioVersion = 15.0.26730.16
 MinimumVisualStudioVersion = 12.0.30501.0
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libx264", "libx264.vcxproj", "{20179127-853B-4FE9-B7C0-9E817E6A3A72}"
 EndProject
@@ -46,6 +47,7 @@ Global
 		{20179127-853B-4FE9-B7C0-9E817E6A3A72}.ReleaseLTO|x86.ActiveCfg = ReleaseLTO|Win32
 		{20179127-853B-4FE9-B7C0-9E817E6A3A72}.ReleaseLTO|x86.Build.0 = ReleaseLTO|Win32
 		{DF0E4003-C938-4CE6-A06A-F7741512B46C}.Debug|x64.ActiveCfg = Debug|x64
+		{DF0E4003-C938-4CE6-A06A-F7741512B46C}.Debug|x64.Build.0 = Debug|x64
 		{DF0E4003-C938-4CE6-A06A-F7741512B46C}.Debug|x86.ActiveCfg = Debug|Win32
 		{DF0E4003-C938-4CE6-A06A-F7741512B46C}.DebugDLL|x64.ActiveCfg = Debug|x64
 		{DF0E4003-C938-4CE6-A06A-F7741512B46C}.DebugDLL|x86.ActiveCfg = Debug|Win32
@@ -63,5 +65,8 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{DF0E4003-C938-4CE6-A06A-F7741512B46C} = {20A224A6-544D-49B2-B0B0-4B5B5FF9689D}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {9D869A69-C64C-4426-BA16-902CD788E540}
 	EndGlobalSection
 EndGlobal
