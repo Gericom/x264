@@ -20,7 +20,7 @@
 #define fseek _fseeki64
 #define ftell _ftelli64
 #define HAVE_GPL 1
-#define HAVE_INTERLACED 1
+#define HAVE_INTERLACED 0 //1
 #if BIT_DEPTH==8
 #   define HAVE_OPENCL 1
 #else
@@ -48,4 +48,5 @@
 #endif
 #define HAVE_WINRT 0
 #define HAVE_BITDEPTH8 1
-#define HAVE_BITDEPTH10 1
+#define HAVE_BITDEPTH10 0 //1
+#define CHROMA_FORMAT CHROMA_420

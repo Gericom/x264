@@ -196,7 +196,7 @@ static void slice_header_init( x264_t *h, x264_slice_header_t *sh,
     sh->i_cabac_init_idc = param->i_cabac_init_idc;
 
     sh->i_qp = SPEC_QP(i_qp);
-    sh->i_qp_delta = sh->i_qp - pps->i_pic_init_qp;
+	sh->i_qp_delta = sh->i_qp - pps->i_pic_init_qp;
     sh->b_sp_for_swidth = 0;
     sh->i_qs_delta = 0;
 
@@ -210,9 +210,33 @@ static void slice_header_init( x264_t *h, x264_slice_header_t *sh,
     sh->i_beta_offset = param->i_deblocking_filter_beta << 1;
 }
 
-static void slice_header_write( bs_t *s, x264_slice_header_t *sh, int i_nal_ref_idc )
+static int old_qp = 0;
+
+static void slice_header_write(bs_t *s, x264_slice_header_t *sh, int i_nal_ref_idc)
 {
-    if( sh->b_mbaff )
+	//I think the frame header should be written here
+	if (sh->i_type == SLICE_TYPE_I)
+	{
+		//i frame
+		bs_write1(s, 1);
+		//yuv format, this should be configurable (1 = yuv, 0 = ds integer yuv approximation)
+		bs_write1(s, 1);
+		//dct coef encoding table to use, how do I choose?!
+		//and inter frames always use table 0
+		bs_write1(s, 0);
+		//qp
+		bs_write(s, 6, sh->i_qp);
+	}
+	else
+	{
+		//p frame
+		bs_write1(s, 0);
+		//qp delta
+		bs_write_se(s, sh->i_qp - old_qp);
+	}
+	old_qp = sh->i_qp;
+
+  /*  if( sh->b_mbaff )
     {
         int first_x = sh->i_first_mb % sh->sps->i_mb_width;
         int first_y = sh->i_first_mb / sh->sps->i_mb_width;
@@ -222,7 +246,7 @@ static void slice_header_write( bs_t *s, x264_slice_header_t *sh, int i_nal_ref_
     else
         bs_write_ue( s, sh->i_first_mb );
 
-    bs_write_ue( s, sh->i_type + 5 );   /* same type things */
+    bs_write_ue( s, sh->i_type + 5 );   /* same type things 
     bs_write_ue( s, sh->i_pps_id );
     bs_write( s, sh->sps->i_log2_max_frame_num, sh->i_frame_num & ((1<<sh->sps->i_log2_max_frame_num)-1) );
 
@@ -233,7 +257,7 @@ static void slice_header_write( bs_t *s, x264_slice_header_t *sh, int i_nal_ref_
             bs_write1( s, sh->b_bottom_field );
     }
 
-    if( sh->i_idr_pic_id >= 0 ) /* NAL IDR */
+    if( sh->i_idr_pic_id >= 0 ) /* NAL IDR /
         bs_write_ue( s, sh->i_idr_pic_id );
 
     if( sh->sps->i_poc_type == 0 )
@@ -246,21 +270,21 @@ static void slice_header_write( bs_t *s, x264_slice_header_t *sh, int i_nal_ref_
     if( sh->pps->b_redundant_pic_cnt )
         bs_write_ue( s, sh->i_redundant_pic_cnt );
 
-    if( sh->i_type == SLICE_TYPE_B )
-        bs_write1( s, sh->b_direct_spatial_mv_pred );
+  //  if( sh->i_type == SLICE_TYPE_B )
+   //     bs_write1( s, sh->b_direct_spatial_mv_pred );
 
-    if( sh->i_type == SLICE_TYPE_P || sh->i_type == SLICE_TYPE_B )
+    if( sh->i_type == SLICE_TYPE_P)// || sh->i_type == SLICE_TYPE_B )
     {
         bs_write1( s, sh->b_num_ref_idx_override );
         if( sh->b_num_ref_idx_override )
         {
             bs_write_ue( s, sh->i_num_ref_idx_l0_active - 1 );
-            if( sh->i_type == SLICE_TYPE_B )
-                bs_write_ue( s, sh->i_num_ref_idx_l1_active - 1 );
+            //if( sh->i_type == SLICE_TYPE_B )
+            //    bs_write_ue( s, sh->i_num_ref_idx_l1_active - 1 );
         }
     }
 
-    /* ref pic list reordering */
+    /* ref pic list reordering /
     if( sh->i_type != SLICE_TYPE_I )
     {
         bs_write1( s, sh->b_ref_pic_list_reordering[0] );
@@ -274,7 +298,7 @@ static void slice_header_write( bs_t *s, x264_slice_header_t *sh, int i_nal_ref_
             bs_write_ue( s, 3 );
         }
     }
-    if( sh->i_type == SLICE_TYPE_B )
+    /*if( sh->i_type == SLICE_TYPE_B )
     {
         bs_write1( s, sh->b_ref_pic_list_reordering[1] );
         if( sh->b_ref_pic_list_reordering[1] )
@@ -286,13 +310,13 @@ static void slice_header_write( bs_t *s, x264_slice_header_t *sh, int i_nal_ref_
             }
             bs_write_ue( s, 3 );
         }
-    }
+    }/
 
     sh->b_weighted_pred = 0;
     if( sh->pps->b_weighted_pred && sh->i_type == SLICE_TYPE_P )
     {
         sh->b_weighted_pred = sh->weight[0][0].weightfn || sh->weight[0][1].weightfn || sh->weight[0][2].weightfn;
-        /* pred_weight_table() */
+        /* pred_weight_table() /
         bs_write_ue( s, sh->weight[0][0].i_denom );
         bs_write_ue( s, sh->weight[0][1].i_denom );
         for( int i = 0; i < sh->i_num_ref_idx_l0_active; i++ )
@@ -316,29 +340,29 @@ static void slice_header_write( bs_t *s, x264_slice_header_t *sh, int i_nal_ref_
             }
         }
     }
-    else if( sh->pps->b_weighted_bipred == 1 && sh->i_type == SLICE_TYPE_B )
-    {
-      /* TODO */
-    }
+   // else if( sh->pps->b_weighted_bipred == 1 && sh->i_type == SLICE_TYPE_B )
+    //{
+      /* TODO /
+    //}
 
     if( i_nal_ref_idc != 0 )
     {
         if( sh->i_idr_pic_id >= 0 )
         {
-            bs_write1( s, 0 );  /* no output of prior pics flag */
-            bs_write1( s, 0 );  /* long term reference flag */
+            bs_write1( s, 0 );  /* no output of prior pics flag /
+            bs_write1( s, 0 );  /* long term reference flag /
         }
         else
         {
-            bs_write1( s, sh->i_mmco_command_count > 0 ); /* adaptive_ref_pic_marking_mode_flag */
+            bs_write1( s, sh->i_mmco_command_count > 0 ); /* adaptive_ref_pic_marking_mode_flag /
             if( sh->i_mmco_command_count > 0 )
             {
                 for( int i = 0; i < sh->i_mmco_command_count; i++ )
                 {
-                    bs_write_ue( s, 1 ); /* mark short term ref as unused */
+                    bs_write_ue( s, 1 ); /* mark short term ref as unused /
                     bs_write_ue( s, sh->mmco[i].i_difference_of_pic_nums - 1 );
                 }
-                bs_write_ue( s, 0 ); /* end command list */
+                bs_write_ue( s, 0 ); /* end command list /
             }
         }
     }
@@ -346,7 +370,7 @@ static void slice_header_write( bs_t *s, x264_slice_header_t *sh, int i_nal_ref_
     if( sh->pps->b_cabac && sh->i_type != SLICE_TYPE_I )
         bs_write_ue( s, sh->i_cabac_init_idc );
 
-    bs_write_se( s, sh->i_qp_delta );      /* slice qp delta */
+    bs_write_se( s, sh->i_qp_delta );      /* slice qp delta /
 
     if( sh->pps->b_deblocking_filter_control )
     {
@@ -356,7 +380,7 @@ static void slice_header_write( bs_t *s, x264_slice_header_t *sh, int i_nal_ref_
             bs_write_se( s, sh->i_alpha_c0_offset >> 1 );
             bs_write_se( s, sh->i_beta_offset >> 1 );
         }
-    }
+    }*/
 }
 
 /* If we are within a reasonable distance of the end of the memory allocated for the bitstream, */
@@ -2675,21 +2699,22 @@ static intptr_t slice_write( x264_t *h )
     h->mb.i_mb_xy = h->sh.i_first_mb;
     h->sh.i_qp = x264_ratecontrol_mb_qp( h );
     h->sh.i_qp = SPEC_QP( h->sh.i_qp );
-    h->sh.i_qp_delta = h->sh.i_qp - h->pps->i_pic_init_qp;
+	h->sh.i_qp_delta = h->sh.i_qp - h->pps->i_pic_init_qp;
 
     slice_header_write( &h->out.bs, &h->sh, h->i_nal_ref_idc );
-    if( h->param.b_cabac )
+	
+    /*if( h->param.b_cabac )
     {
-        /* alignment needed */
+        /* alignment needed /
         bs_align_1( &h->out.bs );
 
-        /* init cabac */
+        /* init cabac /
         x264_cabac_context_init( h, &h->cabac, h->sh.i_type, x264_clip3( h->sh.i_qp-QP_BD_OFFSET, 0, 51 ), h->sh.i_cabac_init_idc );
         x264_cabac_encode_init ( &h->cabac, h->out.bs.p, h->out.bs.p_end );
         last_emu_check = h->cabac.p;
     }
-    else
-        last_emu_check = h->out.bs.p;
+    else*/
+    last_emu_check = h->out.bs.p;
     h->mb.i_last_qp = h->sh.i_qp;
     h->mb.i_last_dqp = 0;
     h->mb.field_decoding_flag = 0;
@@ -2709,8 +2734,8 @@ static intptr_t slice_write( x264_t *h )
                 return -1;
             if( !(i_mb_y & SLICE_MBAFF) && h->param.rc.i_vbv_buffer_size )
                 bitstream_backup( h, &bs_bak[BS_BAK_ROW_VBV], i_skip, 1 );
-            if( !h->mb.b_reencode_mb )
-                fdec_filter_row( h, i_mb_y, 0 );
+            //if( !h->mb.b_reencode_mb )
+            //    fdec_filter_row( h, i_mb_y, 0 );
         }
 
         if( back_up_bitstream )
@@ -2753,7 +2778,7 @@ static intptr_t slice_write( x264_t *h )
 reencode:
         x264_macroblock_encode( h );
 
-        if( h->param.b_cabac )
+        /*if( h->param.b_cabac )
         {
             if( mb_xy > h->sh.i_first_mb && !(SLICE_MBAFF && (i_mb_y&1)) )
                 x264_cabac_encode_terminal( &h->cabac );
@@ -2768,19 +2793,19 @@ reencode:
             }
         }
         else
-        {
-            if( IS_SKIP( h->mb.i_type ) )
-                i_skip++;
-            else
-            {
+        {*/
+            //if( IS_SKIP( h->mb.i_type ) )
+            //    i_skip++;
+            //else
+            //{
                 if( h->sh.i_type != SLICE_TYPE_I )
                 {
-                    bs_write_ue( &h->out.bs, i_skip );  /* skip run */
+                    //bs_write_ue( &h->out.bs, i_skip );  /* skip run */
                     i_skip = 0;
                 }
                 x264_macroblock_write_cavlc( h );
                 /* If there was a CAVLC level code overflow, try again at a higher QP. */
-                if( h->mb.b_overflow )
+                /*if( h->mb.b_overflow )
                 {
                     h->mb.i_chroma_qp = h->chroma_qp_table[++h->mb.i_qp];
                     h->mb.i_skip_intra = 0;
@@ -2788,9 +2813,9 @@ reencode:
                     h->mb.b_overflow = 0;
                     bitstream_restore( h, &bs_bak[BS_BAK_CAVLC_OVERFLOW], &i_skip, 0 );
                     goto reencode;
-                }
-            }
-        }
+                }*/
+            //}
+       // }
 
         int total_bits = bs_pos(&h->out.bs) + x264_cabac_pos(&h->cabac);
         int mb_size = total_bits - mb_spos;
@@ -2942,8 +2967,8 @@ cont:
         }
 
         /* calculate deblock strength values (actual deblocking is done per-row along with hpel) */
-        if( b_deblock )
-            x264_macroblock_deblock_strength( h );
+        //if( b_deblock )
+        //    x264_macroblock_deblock_strength( h );
 
         if( mb_xy == h->sh.i_last_mb )
             break;
@@ -2966,19 +2991,20 @@ cont:
 
     h->out.nal[h->out.i_nal].i_last_mb = h->sh.i_last_mb;
 
-    if( h->param.b_cabac )
+	bs_write(&h->out.bs, 16, 0);
+    /*if( h->param.b_cabac )
     {
         x264_cabac_encode_flush( h, &h->cabac );
         h->out.bs.p = h->cabac.p;
     }
     else
-    {
-        if( i_skip > 0 )
-            bs_write_ue( &h->out.bs, i_skip );  /* last skip run */
+    {*/
+        //if( i_skip > 0 )
+        //    bs_write_ue( &h->out.bs, i_skip );  /* last skip run */
         /* rbsp_slice_trailing_bits */
-        bs_rbsp_trailing( &h->out.bs );
+        //bs_rbsp_trailing( &h->out.bs );
         bs_flush( &h->out.bs );
-    }
+    //}
     if( nal_end( h ) )
         return -1;
 
@@ -3496,12 +3522,12 @@ int     x264_encoder_encode( x264_t *h,
         else
             pic_type = 7;
 
-        nal_start( h, NAL_AUD, NAL_PRIORITY_DISPOSABLE );
-        bs_write( &h->out.bs, 3, pic_type );
-        bs_rbsp_trailing( &h->out.bs );
-        if( nal_end( h ) )
-            return -1;
-        overhead += h->out.nal[h->out.i_nal-1].i_payload + NALU_OVERHEAD;
+        //nal_start( h, NAL_AUD, NAL_PRIORITY_DISPOSABLE );
+        //bs_write( &h->out.bs, 3, pic_type );
+        //bs_rbsp_trailing( &h->out.bs );
+       // if( nal_end( h ) )
+        //    return -1;
+       // overhead += h->out.nal[h->out.i_nal-1].i_payload + NALU_OVERHEAD;
     }
 
     h->i_nal_type = i_nal_type;
@@ -3543,52 +3569,52 @@ int     x264_encoder_encode( x264_t *h,
         }
     }
 
-    if( h->fenc->b_keyframe )
-    {
-        /* Write SPS and PPS */
-        if( h->param.b_repeat_headers )
-        {
-            /* generate sequence parameters */
-            nal_start( h, NAL_SPS, NAL_PRIORITY_HIGHEST );
-            x264_sps_write( &h->out.bs, h->sps );
-            if( nal_end( h ) )
-                return -1;
-            /* Pad AUD/SPS to 256 bytes like Panasonic */
-            if( h->param.i_avcintra_class )
-                h->out.nal[h->out.i_nal-1].i_padding = 256 - bs_pos( &h->out.bs ) / 8 - 2*NALU_OVERHEAD;
-            overhead += h->out.nal[h->out.i_nal-1].i_payload + h->out.nal[h->out.i_nal-1].i_padding + NALU_OVERHEAD;
+    //if( h->fenc->b_keyframe )
+    //{
+    //    /* Write SPS and PPS */
+    //    if( h->param.b_repeat_headers )
+    //    {
+    //        /* generate sequence parameters */
+    //        nal_start( h, NAL_SPS, NAL_PRIORITY_HIGHEST );
+    //        x264_sps_write( &h->out.bs, h->sps );
+    //        if( nal_end( h ) )
+    //            return -1;
+    //        /* Pad AUD/SPS to 256 bytes like Panasonic */
+    //        if( h->param.i_avcintra_class )
+    //            h->out.nal[h->out.i_nal-1].i_padding = 256 - bs_pos( &h->out.bs ) / 8 - 2*NALU_OVERHEAD;
+    //        overhead += h->out.nal[h->out.i_nal-1].i_payload + h->out.nal[h->out.i_nal-1].i_padding + NALU_OVERHEAD;
 
-            /* generate picture parameters */
-            nal_start( h, NAL_PPS, NAL_PRIORITY_HIGHEST );
-            x264_pps_write( &h->out.bs, h->sps, h->pps );
-            if( nal_end( h ) )
-                return -1;
-            if( h->param.i_avcintra_class )
-                h->out.nal[h->out.i_nal-1].i_padding = 256 - h->out.nal[h->out.i_nal-1].i_payload - NALU_OVERHEAD;
-            overhead += h->out.nal[h->out.i_nal-1].i_payload + h->out.nal[h->out.i_nal-1].i_padding + NALU_OVERHEAD;
-        }
+    //        /* generate picture parameters */
+    //        nal_start( h, NAL_PPS, NAL_PRIORITY_HIGHEST );
+    //        x264_pps_write( &h->out.bs, h->sps, h->pps );
+    //        if( nal_end( h ) )
+    //            return -1;
+    //        if( h->param.i_avcintra_class )
+    //            h->out.nal[h->out.i_nal-1].i_padding = 256 - h->out.nal[h->out.i_nal-1].i_payload - NALU_OVERHEAD;
+    //        overhead += h->out.nal[h->out.i_nal-1].i_payload + h->out.nal[h->out.i_nal-1].i_padding + NALU_OVERHEAD;
+    //    }
 
-        /* when frame threading is used, buffering period sei is written in encoder_frame_end */
-        if( h->i_thread_frames == 1 && h->sps->vui.b_nal_hrd_parameters_present )
-        {
-            x264_hrd_fullness( h );
-            nal_start( h, NAL_SEI, NAL_PRIORITY_DISPOSABLE );
-            x264_sei_buffering_period_write( h, &h->out.bs );
-            if( nal_end( h ) )
-               return -1;
-            overhead += h->out.nal[h->out.i_nal-1].i_payload + SEI_OVERHEAD;
-        }
-    }
+    //    /* when frame threading is used, buffering period sei is written in encoder_frame_end */
+    //    if( h->i_thread_frames == 1 && h->sps->vui.b_nal_hrd_parameters_present )
+    //    {
+    //        x264_hrd_fullness( h );
+    //        nal_start( h, NAL_SEI, NAL_PRIORITY_DISPOSABLE );
+    //        x264_sei_buffering_period_write( h, &h->out.bs );
+    //        if( nal_end( h ) )
+    //           return -1;
+    //        overhead += h->out.nal[h->out.i_nal-1].i_payload + SEI_OVERHEAD;
+    //    }
+    //}
 
     /* write extra sei */
     for( int i = 0; i < h->fenc->extra_sei.num_payloads; i++ )
     {
-        nal_start( h, NAL_SEI, NAL_PRIORITY_DISPOSABLE );
-        x264_sei_write( &h->out.bs, h->fenc->extra_sei.payloads[i].payload, h->fenc->extra_sei.payloads[i].payload_size,
-                        h->fenc->extra_sei.payloads[i].payload_type );
-        if( nal_end( h ) )
-            return -1;
-        overhead += h->out.nal[h->out.i_nal-1].i_payload + SEI_OVERHEAD;
+        //nal_start( h, NAL_SEI, NAL_PRIORITY_DISPOSABLE );
+        //x264_sei_write( &h->out.bs, h->fenc->extra_sei.payloads[i].payload, h->fenc->extra_sei.payloads[i].payload_size,
+        //                h->fenc->extra_sei.payloads[i].payload_type );
+        //if( nal_end( h ) )
+        //    return -1;
+        //overhead += h->out.nal[h->out.i_nal-1].i_payload + SEI_OVERHEAD;
         if( h->fenc->extra_sei.sei_free )
         {
             h->fenc->extra_sei.sei_free( h->fenc->extra_sei.payloads[i].payload );
@@ -3609,108 +3635,108 @@ int     x264_encoder_encode( x264_t *h,
         if( h->param.b_repeat_headers && h->fenc->i_frame == 0 && !h->param.i_avcintra_class )
         {
             /* identify ourself */
-            nal_start( h, NAL_SEI, NAL_PRIORITY_DISPOSABLE );
-            if( x264_sei_version_write( h, &h->out.bs ) )
-                return -1;
-            if( nal_end( h ) )
-                return -1;
-            overhead += h->out.nal[h->out.i_nal-1].i_payload + SEI_OVERHEAD;
+           // nal_start( h, NAL_SEI, NAL_PRIORITY_DISPOSABLE );
+            //if( x264_sei_version_write( h, &h->out.bs ) )
+            //    return -1;
+           // if( nal_end( h ) )
+            //    return -1;
+           // overhead += h->out.nal[h->out.i_nal-1].i_payload + SEI_OVERHEAD;
         }
 
         if( h->fenc->i_type != X264_TYPE_IDR )
         {
-            int time_to_recovery = h->param.b_open_gop ? 0 : X264_MIN( h->mb.i_mb_width - 1, h->param.i_keyint_max ) + h->param.i_bframe - 1;
-            nal_start( h, NAL_SEI, NAL_PRIORITY_DISPOSABLE );
-            x264_sei_recovery_point_write( h, &h->out.bs, time_to_recovery );
-            if( nal_end( h ) )
-                return -1;
-            overhead += h->out.nal[h->out.i_nal-1].i_payload + SEI_OVERHEAD;
+            //int time_to_recovery = h->param.b_open_gop ? 0 : X264_MIN( h->mb.i_mb_width - 1, h->param.i_keyint_max ) + h->param.i_bframe - 1;
+            //nal_start( h, NAL_SEI, NAL_PRIORITY_DISPOSABLE );
+           // x264_sei_recovery_point_write( h, &h->out.bs, time_to_recovery );
+           // if( nal_end( h ) )
+            //    return -1;
+            //overhead += h->out.nal[h->out.i_nal-1].i_payload + SEI_OVERHEAD;
         }
     }
 
     if( h->param.i_frame_packing >= 0 && (h->fenc->b_keyframe || h->param.i_frame_packing == 5) )
     {
-        nal_start( h, NAL_SEI, NAL_PRIORITY_DISPOSABLE );
-        x264_sei_frame_packing_write( h, &h->out.bs );
-        if( nal_end( h ) )
-            return -1;
-        overhead += h->out.nal[h->out.i_nal-1].i_payload + SEI_OVERHEAD;
+        //nal_start( h, NAL_SEI, NAL_PRIORITY_DISPOSABLE );
+        //x264_sei_frame_packing_write( h, &h->out.bs );
+        //if( nal_end( h ) )
+       //     return -1;
+        //overhead += h->out.nal[h->out.i_nal-1].i_payload + SEI_OVERHEAD;
     }
 
     if( h->param.i_alternative_transfer != 2 )
     {
-        nal_start( h, NAL_SEI, NAL_PRIORITY_DISPOSABLE );
-        x264_sei_alternative_transfer_write( h, &h->out.bs );
-        if( nal_end( h ) )
-            return -1;
-        overhead += h->out.nal[h->out.i_nal-1].i_payload + SEI_OVERHEAD;
+       // nal_start( h, NAL_SEI, NAL_PRIORITY_DISPOSABLE );
+       // x264_sei_alternative_transfer_write( h, &h->out.bs );
+       // if( nal_end( h ) )
+        //    return -1;
+       // overhead += h->out.nal[h->out.i_nal-1].i_payload + SEI_OVERHEAD;
     }
 
     /* generate sei pic timing */
     if( h->sps->vui.b_pic_struct_present || h->sps->vui.b_nal_hrd_parameters_present )
     {
-        nal_start( h, NAL_SEI, NAL_PRIORITY_DISPOSABLE );
-        x264_sei_pic_timing_write( h, &h->out.bs );
-        if( nal_end( h ) )
-            return -1;
-        overhead += h->out.nal[h->out.i_nal-1].i_payload + SEI_OVERHEAD;
+        //nal_start( h, NAL_SEI, NAL_PRIORITY_DISPOSABLE );
+       // x264_sei_pic_timing_write( h, &h->out.bs );
+       // if( nal_end( h ) )
+       //     return -1;
+       // overhead += h->out.nal[h->out.i_nal-1].i_payload + SEI_OVERHEAD;
     }
 
     /* As required by Blu-ray. */
     if( !IS_X264_TYPE_B( h->fenc->i_type ) && h->b_sh_backup )
     {
         h->b_sh_backup = 0;
-        nal_start( h, NAL_SEI, NAL_PRIORITY_DISPOSABLE );
-        x264_sei_dec_ref_pic_marking_write( h, &h->out.bs );
-        if( nal_end( h ) )
-            return -1;
-        overhead += h->out.nal[h->out.i_nal-1].i_payload + SEI_OVERHEAD;
+       // nal_start( h, NAL_SEI, NAL_PRIORITY_DISPOSABLE );
+      //  x264_sei_dec_ref_pic_marking_write( h, &h->out.bs );
+       // if( nal_end( h ) )
+       //     return -1;
+       // overhead += h->out.nal[h->out.i_nal-1].i_payload + SEI_OVERHEAD;
     }
 
     if( h->fenc->b_keyframe && h->param.b_intra_refresh )
         h->i_cpb_delay_pir_offset_next = h->fenc->i_cpb_delay;
 
     /* Filler space: 10 or 18 SEIs' worth of space, depending on resolution */
-    if( h->param.i_avcintra_class )
-    {
-        /* Write an empty filler NAL to mimic the AUD in the P2 format*/
-        nal_start( h, NAL_FILLER, NAL_PRIORITY_DISPOSABLE );
-        x264_filler_write( h, &h->out.bs, 0 );
-        if( nal_end( h ) )
-            return -1;
-        overhead += h->out.nal[h->out.i_nal-1].i_payload + NALU_OVERHEAD;
+    //if( h->param.i_avcintra_class )
+    //{
+    //    /* Write an empty filler NAL to mimic the AUD in the P2 format*/
+    //    nal_start( h, NAL_FILLER, NAL_PRIORITY_DISPOSABLE );
+    //    x264_filler_write( h, &h->out.bs, 0 );
+    //    if( nal_end( h ) )
+    //        return -1;
+    //    overhead += h->out.nal[h->out.i_nal-1].i_payload + NALU_OVERHEAD;
 
-        /* All lengths are magic lengths that decoders expect to see */
-        /* "UMID" SEI */
-        nal_start( h, NAL_SEI, NAL_PRIORITY_DISPOSABLE );
-        if( x264_sei_avcintra_umid_write( h, &h->out.bs ) < 0 )
-            return -1;
-        if( nal_end( h ) )
-            return -1;
-        overhead += h->out.nal[h->out.i_nal-1].i_payload + SEI_OVERHEAD;
+    //    /* All lengths are magic lengths that decoders expect to see */
+    //    /* "UMID" SEI */
+    //    nal_start( h, NAL_SEI, NAL_PRIORITY_DISPOSABLE );
+    //    if( x264_sei_avcintra_umid_write( h, &h->out.bs ) < 0 )
+    //        return -1;
+    //    if( nal_end( h ) )
+    //        return -1;
+    //    overhead += h->out.nal[h->out.i_nal-1].i_payload + SEI_OVERHEAD;
 
-        int unpadded_len;
-        int total_len;
-        if( h->param.i_height == 1080 )
-        {
-            unpadded_len = 5780;
-            total_len = 17*512;
-        }
-        else
-        {
-            unpadded_len = 2900;
-            total_len = 9*512;
-        }
-        /* "VANC" SEI */
-        nal_start( h, NAL_SEI, NAL_PRIORITY_DISPOSABLE );
-        if( x264_sei_avcintra_vanc_write( h, &h->out.bs, unpadded_len ) < 0 )
-            return -1;
-        if( nal_end( h ) )
-            return -1;
+    //    int unpadded_len;
+    //    int total_len;
+    //    if( h->param.i_height == 1080 )
+    //    {
+    //        unpadded_len = 5780;
+    //        total_len = 17*512;
+    //    }
+    //    else
+    //    {
+    //        unpadded_len = 2900;
+    //        total_len = 9*512;
+    //    }
+    //    /* "VANC" SEI */
+    //    nal_start( h, NAL_SEI, NAL_PRIORITY_DISPOSABLE );
+    //    if( x264_sei_avcintra_vanc_write( h, &h->out.bs, unpadded_len ) < 0 )
+    //        return -1;
+    //    if( nal_end( h ) )
+    //        return -1;
 
-        h->out.nal[h->out.i_nal-1].i_padding = total_len - h->out.nal[h->out.i_nal-1].i_payload - SEI_OVERHEAD;
-        overhead += h->out.nal[h->out.i_nal-1].i_payload + h->out.nal[h->out.i_nal-1].i_padding + SEI_OVERHEAD;
-    }
+    //    h->out.nal[h->out.i_nal-1].i_padding = total_len - h->out.nal[h->out.i_nal-1].i_payload - SEI_OVERHEAD;
+    //    overhead += h->out.nal[h->out.i_nal-1].i_payload + h->out.nal[h->out.i_nal-1].i_padding + SEI_OVERHEAD;
+    //}
 
     /* Init the rate control */
     /* FIXME: Include slice header bit cost. */
@@ -3782,14 +3808,14 @@ static int encoder_frame_end( x264_t *h, x264_t *thread_current,
     x264_emms();
 
     /* generate buffering period sei and insert it into place */
-    if( h->i_thread_frames > 1 && h->fenc->b_keyframe && h->sps->vui.b_nal_hrd_parameters_present )
+    /*if( h->i_thread_frames > 1 && h->fenc->b_keyframe && h->sps->vui.b_nal_hrd_parameters_present )
     {
         x264_hrd_fullness( h );
         nal_start( h, NAL_SEI, NAL_PRIORITY_DISPOSABLE );
         x264_sei_buffering_period_write( h, &h->out.bs );
         if( nal_end( h ) )
            return -1;
-        /* buffering period sei must follow AUD, SPS and PPS and precede all other SEIs */
+        /* buffering period sei must follow AUD, SPS and PPS and precede all other SEIs /
         int idx = 0;
         while( h->out.nal[idx].i_type == NAL_AUD ||
                h->out.nal[idx].i_type == NAL_SPS ||
@@ -3798,7 +3824,7 @@ static int encoder_frame_end( x264_t *h, x264_t *thread_current,
         x264_nal_t nal_tmp = h->out.nal[h->out.i_nal-1];
         memmove( &h->out.nal[idx+1], &h->out.nal[idx], (h->out.i_nal-idx-1)*sizeof(x264_nal_t) );
         h->out.nal[idx] = nal_tmp;
-    }
+    }*/
 
     int frame_size = encoder_encapsulate_nals( h, 0 );
     if( frame_size < 0 )
@@ -3843,56 +3869,56 @@ static int encoder_frame_end( x264_t *h, x264_t *thread_current,
 
     /* Filler in AVC-Intra mode is written as zero bytes to the last slice
      * We don't know the size of the last slice until encapsulation so we add filler to the encapsulated NAL */
-    if( h->param.i_avcintra_class )
-    {
-        if( check_encapsulated_buffer( h, h->thread[0], h->out.i_nal, frame_size, frame_size + filler ) < 0 )
-            return -1;
+    //if( h->param.i_avcintra_class )
+    //{
+    //    if( check_encapsulated_buffer( h, h->thread[0], h->out.i_nal, frame_size, frame_size + filler ) < 0 )
+    //        return -1;
 
-        x264_nal_t *nal = &h->out.nal[h->out.i_nal-1];
-        memset( nal->p_payload + nal->i_payload, 0, filler );
-        nal->i_payload += filler;
-        nal->i_padding = filler;
-        frame_size += filler;
+    //    x264_nal_t *nal = &h->out.nal[h->out.i_nal-1];
+    //    memset( nal->p_payload + nal->i_payload, 0, filler );
+    //    nal->i_payload += filler;
+    //    nal->i_padding = filler;
+    //    frame_size += filler;
 
-        /* Fix up the size header for mp4/etc */
-        if( !h->param.b_annexb )
-        {
-            /* Size doesn't include the size of the header we're writing now. */
-            uint8_t *nal_data = nal->p_payload;
-            int chunk_size = nal->i_payload - 4;
-            nal_data[0] = chunk_size >> 24;
-            nal_data[1] = chunk_size >> 16;
-            nal_data[2] = chunk_size >> 8;
-            nal_data[3] = chunk_size >> 0;
-        }
-    }
-    else
-    {
-        while( filler > 0 )
-        {
-            int f, overhead = FILLER_OVERHEAD - h->param.b_annexb;
-            if( h->param.i_slice_max_size && filler > h->param.i_slice_max_size )
-            {
-                int next_size = filler - h->param.i_slice_max_size;
-                int overflow = X264_MAX( overhead - next_size, 0 );
-                f = h->param.i_slice_max_size - overhead - overflow;
-            }
-            else
-                f = X264_MAX( 0, filler - overhead );
+    //    /* Fix up the size header for mp4/etc */
+    //    if( !h->param.b_annexb )
+    //    {
+    //        /* Size doesn't include the size of the header we're writing now. */
+    //        uint8_t *nal_data = nal->p_payload;
+    //        int chunk_size = nal->i_payload - 4;
+    //        nal_data[0] = chunk_size >> 24;
+    //        nal_data[1] = chunk_size >> 16;
+    //        nal_data[2] = chunk_size >> 8;
+    //        nal_data[3] = chunk_size >> 0;
+    //    }
+    //}
+    //else
+    //{
+    //    while( filler > 0 )
+    //    {
+    //        int f, overhead = FILLER_OVERHEAD - h->param.b_annexb;
+    //        if( h->param.i_slice_max_size && filler > h->param.i_slice_max_size )
+    //        {
+    //            int next_size = filler - h->param.i_slice_max_size;
+    //            int overflow = X264_MAX( overhead - next_size, 0 );
+    //            f = h->param.i_slice_max_size - overhead - overflow;
+    //        }
+    //        else
+    //            f = X264_MAX( 0, filler - overhead );
 
-            if( bitstream_check_buffer_filler( h, f ) )
-                return -1;
-            nal_start( h, NAL_FILLER, NAL_PRIORITY_DISPOSABLE );
-            x264_filler_write( h, &h->out.bs, f );
-            if( nal_end( h ) )
-                return -1;
-            int total_size = encoder_encapsulate_nals( h, h->out.i_nal-1 );
-            if( total_size < 0 )
-                return -1;
-            frame_size += total_size;
-            filler -= total_size;
-        }
-    }
+    //        if( bitstream_check_buffer_filler( h, f ) )
+    //            return -1;
+    //        nal_start( h, NAL_FILLER, NAL_PRIORITY_DISPOSABLE );
+    //        x264_filler_write( h, &h->out.bs, f );
+    //        if( nal_end( h ) )
+    //            return -1;
+    //        int total_size = encoder_encapsulate_nals( h, h->out.i_nal-1 );
+    //        if( total_size < 0 )
+    //            return -1;
+    //        frame_size += total_size;
+    //        filler -= total_size;
+    //    }
+    //}
 
     /* End bitstream, set output  */
     *pi_nal = h->out.i_nal;

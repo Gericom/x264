@@ -160,7 +160,7 @@ static ALWAYS_INLINE void x264_mb_encode_i4x4( x264_t *h, int p, int idx, int i_
     {
         h->mb.i_cbp_luma |= 1<<(idx>>2);
         h->zigzagf.scan_4x4( h->dct.luma4x4[p*16+idx], dct4x4 );
-        h->quantf.dequant_4x4( dct4x4, h->dequant4_mf[p?CQM_4IC:CQM_4IY], i_qp );
+        h->quantf.dequant_4x4( dct4x4, h->dequant4_mf[CQM_4IY], i_qp );
         h->dctf.add4x4_idct( p_dst, dct4x4 );
     }
 }
@@ -203,8 +203,10 @@ static ALWAYS_INLINE void x264_mb_encode_i8x8( x264_t *h, int p, int idx, int i_
     if( nz )
     {
         h->mb.i_cbp_luma |= 1<<idx;
-        h->zigzagf.scan_8x8( h->dct.luma8x8[p*4+idx], dct8x8 );
-        h->quantf.dequant_8x8( dct8x8, h->dequant8_mf[p?CQM_8IC:CQM_8IY], i_qp );
+		for (int i = 0; i < 64; i++)
+			h->dct.luma8x8[p * 4 + idx][ZigZagTable8x8[i]] = dct8x8[i];
+        //h->zigzagf.scan_8x8( h->dct.luma8x8[p*4+idx], dct8x8 );
+        h->quantf.dequant_8x8( dct8x8, h->dequant8_mf[CQM_8IY], i_qp );
         h->dctf.add8x8_idct8( p_dst, dct8x8 );
         STORE_8x8_NNZ( p, idx, 1 );
     }

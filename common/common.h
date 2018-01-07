@@ -61,7 +61,7 @@
 #define PIXEL_MAX ((1 << BIT_DEPTH)-1)
 // arbitrary, but low because SATD scores are 1/4 normal
 #define X264_LOOKAHEAD_QP (12+QP_BD_OFFSET)
-#define SPEC_QP(x) X264_MIN((x), QP_MAX_SPEC)
+#define SPEC_QP(x) X264_MAX(12, X264_MIN((x), QP_MAX_SPEC))
 
 #define NALU_OVERHEAD 5 // startcode + NAL type costs 5 bytes per frame
 #define FILLER_OVERHEAD (NALU_OVERHEAD+1)

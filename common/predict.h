@@ -33,10 +33,10 @@ typedef void (*x264_predict_8x8_filter_t)( pixel *src, pixel edge[36], int i_nei
 
 enum intra_chroma_pred_e
 {
-    I_PRED_CHROMA_DC = 0,
+    I_PRED_CHROMA_V  = 0,
     I_PRED_CHROMA_H  = 1,
-    I_PRED_CHROMA_V  = 2,
-    I_PRED_CHROMA_P  = 3,
+    I_PRED_CHROMA_P  = 2,
+    I_PRED_CHROMA_DC = 3,
 
     I_PRED_CHROMA_DC_LEFT = 4,
     I_PRED_CHROMA_DC_TOP  = 5,
@@ -44,7 +44,7 @@ enum intra_chroma_pred_e
 };
 static const uint8_t x264_mb_chroma_pred_mode_fix[7] =
 {
-    I_PRED_CHROMA_DC, I_PRED_CHROMA_H, I_PRED_CHROMA_V, I_PRED_CHROMA_P,
+	I_PRED_CHROMA_V, I_PRED_CHROMA_H, I_PRED_CHROMA_P, I_PRED_CHROMA_DC,
     I_PRED_CHROMA_DC, I_PRED_CHROMA_DC,I_PRED_CHROMA_DC
 };
 
@@ -69,13 +69,13 @@ enum intra4x4_pred_e
 {
     I_PRED_4x4_V  = 0,
     I_PRED_4x4_H  = 1,
-    I_PRED_4x4_DC = 2,
-    I_PRED_4x4_DDL= 3,
-    I_PRED_4x4_DDR= 4,
-    I_PRED_4x4_VR = 5,
-    I_PRED_4x4_HD = 6,
-    I_PRED_4x4_VL = 7,
-    I_PRED_4x4_HU = 8,
+	I_PRED_4x4_PLANE = 2,
+    I_PRED_4x4_DC = 3,
+    I_PRED_4x4_HU = 4,
+    I_PRED_4x4_HD = 5,
+    I_PRED_4x4_VR = 6,
+    I_PRED_4x4_DDR= 7,
+	I_PRED_4x4_DDL = 8,
 
     I_PRED_4x4_DC_LEFT = 9,
     I_PRED_4x4_DC_TOP  = 10,
@@ -83,10 +83,10 @@ enum intra4x4_pred_e
 };
 static const int8_t x264_mb_pred_mode4x4_fix[13] =
 {
-    -1,
-    I_PRED_4x4_V,   I_PRED_4x4_H,   I_PRED_4x4_DC,
-    I_PRED_4x4_DDL, I_PRED_4x4_DDR, I_PRED_4x4_VR,
-    I_PRED_4x4_HD,  I_PRED_4x4_VL,  I_PRED_4x4_HU,
+    /*-1*/9,
+    I_PRED_4x4_V,   I_PRED_4x4_H,   I_PRED_4x4_PLANE,
+	I_PRED_4x4_DC, I_PRED_4x4_HU, I_PRED_4x4_HD,
+	I_PRED_4x4_VR,  I_PRED_4x4_DDR,  I_PRED_4x4_DDL,
     I_PRED_4x4_DC,  I_PRED_4x4_DC,  I_PRED_4x4_DC
 };
 #define x264_mb_pred_mode4x4_fix(t) x264_mb_pred_mode4x4_fix[(t)+1]
@@ -94,15 +94,15 @@ static const int8_t x264_mb_pred_mode4x4_fix[13] =
 /* must use the same numbering as intra4x4_pred_e */
 enum intra8x8_pred_e
 {
-    I_PRED_8x8_V  = 0,
-    I_PRED_8x8_H  = 1,
-    I_PRED_8x8_DC = 2,
-    I_PRED_8x8_DDL= 3,
-    I_PRED_8x8_DDR= 4,
-    I_PRED_8x8_VR = 5,
-    I_PRED_8x8_HD = 6,
-    I_PRED_8x8_VL = 7,
-    I_PRED_8x8_HU = 8,
+	I_PRED_8x8_V = 0,
+	I_PRED_8x8_H = 1,
+	I_PRED_8x8_PLANE = 2,
+	I_PRED_8x8_DC = 3,
+	I_PRED_8x8_HU = 4,
+	I_PRED_8x8_HD = 5,
+	I_PRED_8x8_VR = 6,
+	I_PRED_8x8_DDR = 7,
+	I_PRED_8x8_DDL = 8,
 
     I_PRED_8x8_DC_LEFT = 9,
     I_PRED_8x8_DC_TOP  = 10,

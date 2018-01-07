@@ -200,6 +200,7 @@ void x264_me_search_ref( x264_t *h, x264_me_t *m, int16_t (*mvc)[2], int i_mvc, 
     int mv_y_min = h->mb.mv_limit_fpel[0][1];
     int mv_x_max = h->mb.mv_limit_fpel[1][0];
     int mv_y_max = h->mb.mv_limit_fpel[1][1];
+
 /* Special version of pack to allow shortcuts in CHECK_MVRANGE */
 #define pack16to32_mask2(mx,my) ((mx<<16)|(my&0x7FFF))
     uint32_t mv_min = pack16to32_mask2( -mv_x_min, -mv_y_min );

@@ -42,8 +42,10 @@ typedef struct bs_s
     uint8_t *p;
     uint8_t *p_end;
 
-    uintptr_t cur_bits;
-    int     i_left;    /* i_count number of available bits */
+	uint32_t cur_bits;
+	uint32_t bit_count;
+    //uintptr_t cur_bits;
+    //int     i_left;    /* i_count number of available bits */
     int     i_bits_encoded; /* RD only */
 } bs_t;
 
@@ -85,24 +87,36 @@ extern uint32_t x264_run_before[1<<16];
 
 static inline void bs_init( bs_t *s, void *p_data, int i_data )
 {
-    int offset = ((intptr_t)p_data & 3);
+    int offset = ((intptr_t)p_data & 1);
     s->p       = s->p_start = (uint8_t*)p_data - offset;
     s->p_end   = (uint8_t*)p_data + i_data;
-    s->i_left  = (WORD_SIZE - offset)*8;
-    s->cur_bits = endian_fix32( M32(s->p) );
-    s->cur_bits >>= (4-offset)*8;
+	s->bit_count = (offset & 1) ? 8 : 0;
+	s->cur_bits = (offset & 1) ? M16(s->p) << 24 : 0;// endian_fix32(M32(s->p));
+    //s->cur_bits >>= (4-offset)*8;
 }
 static inline int bs_pos( bs_t *s )
 {
-    return( 8 * (s->p - s->p_start) + (WORD_SIZE*8) - s->i_left );
+    return( 8 * (s->p - s->p_start) + s->bit_count );
 }
 
 /* Write the rest of cur_bits to the bitstream; results in a bitstream no longer 32-bit aligned. */
 static inline void bs_flush( bs_t *s )
 {
-    M32( s->p ) = endian_fix32( s->cur_bits << (s->i_left&31) );
-    s->p += WORD_SIZE - (s->i_left >> 3);
-    s->i_left = WORD_SIZE*8;
+	if (s->bit_count >= 16)
+	{
+		*s->p++ = (s->cur_bits >> 16) & 0xFF;
+		*s->p++ = (s->cur_bits >> 24) & 0xFF;
+		s->bit_count -= 16;
+		s->cur_bits <<= 16;
+	}
+	if (s->bit_count > 0)
+	{
+		s->cur_bits <<= 16 - s->bit_count;
+		*s->p++ = (s->cur_bits >> 16) & 0xFF;
+		*s->p++ = (s->cur_bits >> 24) & 0xFF;
+		s->bit_count = 0;
+		s->cur_bits = 0;
+	}
 }
 /* The inverse of bs_flush: prepare the bitstream to be written to again. */
 static inline void bs_realign( bs_t *s )
@@ -111,15 +125,15 @@ static inline void bs_realign( bs_t *s )
     if( offset )
     {
         s->p       = (uint8_t*)s->p - offset;
-        s->i_left  = (WORD_SIZE - offset)*8;
-        s->cur_bits = endian_fix32( M32(s->p) );
-        s->cur_bits >>= (4-offset)*8;
+		s->bit_count = 0;// (WORD_SIZE - offset) * 8;
+		s->cur_bits = 0;// endian_fix32(M32(s->p));
+        //s->cur_bits >>= (4-offset)*8;
     }
 }
 
 static inline void bs_write( bs_t *s, int i_count, uint32_t i_bits )
 {
-    if( WORD_SIZE == 8 )
+    /*if( WORD_SIZE == 8 )
     {
         s->cur_bits = (s->cur_bits << i_count) | i_bits;
         s->i_left -= i_count;
@@ -150,7 +164,16 @@ static inline void bs_write( bs_t *s, int i_count, uint32_t i_bits )
             s->cur_bits = i_bits;
             s->i_left = 32 - i_count;
         }
-    }
+    }*/
+	s->cur_bits |= (i_bits & ((1 << i_count) - 1)) << ((32 - i_count) - s->bit_count);
+	s->bit_count += i_count;
+	if (s->bit_count >= 16)
+	{
+		*s->p++ = (s->cur_bits >> 16) & 0xFF;
+		*s->p++ = s->cur_bits >> 24;
+		s->bit_count -= 16;
+		s->cur_bits <<= 16;
+	}
 }
 
 /* Special case to eliminate branch in normal bs_write. */
@@ -163,7 +186,7 @@ static inline void bs_write32( bs_t *s, uint32_t i_bits )
 
 static inline void bs_write1( bs_t *s, uint32_t i_bit )
 {
-    s->cur_bits <<= 1;
+    /*s->cur_bits <<= 1;
     s->cur_bits |= i_bit;
     s->i_left--;
     if( s->i_left == WORD_SIZE*8-32 )
@@ -171,23 +194,31 @@ static inline void bs_write1( bs_t *s, uint32_t i_bit )
         M32( s->p ) = endian_fix32( s->cur_bits );
         s->p += 4;
         s->i_left = WORD_SIZE*8;
-    }
+    }*/
+	s->cur_bits |= (i_bit & 1) << ((32 - 1) - s->bit_count);
+	if (++s->bit_count >= 16)
+	{
+		*s->p++ = (s->cur_bits >> 16) & 0xFF;
+		*s->p++ = s->cur_bits >> 24;
+		s->bit_count -= 16;
+		s->cur_bits <<= 16;
+	}
 }
 
 static inline void bs_align_0( bs_t *s )
 {
-    bs_write( s, s->i_left&7, 0 );
+    bs_write( s, (32 - s->bit_count)&7, 0 );
     bs_flush( s );
 }
 static inline void bs_align_1( bs_t *s )
 {
-    bs_write( s, s->i_left&7, (1 << (s->i_left&7)) - 1 );
+    bs_write( s, (32 - s->bit_count) &7, (1 << ((32 - s->bit_count) &7)) - 1 );
     bs_flush( s );
 }
 static inline void bs_align_10( bs_t *s )
 {
-    if( s->i_left&7 )
-        bs_write( s, s->i_left&7, 1 << ( (s->i_left&7) - 1 ) );
+    if((32 - s->bit_count) &7 )
+        bs_write( s, (32 - s->bit_count) &7, 1 << ( ((32 - s->bit_count) &7) - 1 ) );
 }
 
 /* golomb functions */
@@ -214,7 +245,7 @@ static const uint8_t x264_ue_size_tab[256] =
 
 static inline void bs_write_ue_big( bs_t *s, unsigned int val )
 {
-    int size = 0;
+    /*int size = 0;
     int tmp = ++val;
     if( tmp >= 0x10000 )
     {
@@ -228,20 +259,40 @@ static inline void bs_write_ue_big( bs_t *s, unsigned int val )
     }
     size += x264_ue_size_tab[tmp];
     bs_write( s, size>>1, 0 );
-    bs_write( s, (size>>1)+1, val );
+    bs_write( s, (size>>1)+1, val );*/
+	int nrBits = 32 - x264_clz((val + 1) / 2);
+	bs_write(s, nrBits, 0);
+	bs_write1(s, 1);//stop bit
+	val -= ((1u << nrBits) - 1);
+	bs_write(s, nrBits, val);
 }
 
 /* Only works on values under 255. */
-static inline void bs_write_ue( bs_t *s, int val )
+static inline void bs_write_ue( bs_t *s, uint32_t val )
 {
-    bs_write( s, x264_ue_size_tab[val+1], val+1 );
+	int nrBits = 32 - x264_clz((val + 1) / 2);
+	bs_write(s, nrBits, 0);
+	bs_write1(s, 1);//stop bit
+	val -= ((1u << nrBits) - 1);
+	bs_write(s, nrBits, val);
+    //bs_write( s, x264_ue_size_tab[val+1], val+1 );
 }
 
 static inline void bs_write_se( bs_t *s, int val )
 {
-    int size = 0;
-    /* Faster than (val <= 0 ? -val*2+1 : val*2) */
-    /* 4 instructions on x86, 3 on ARM */
+	uint32_t newVal;
+	if (val <= 0)
+		newVal = (uint32_t)(1 - (val * 2));
+	else 
+		newVal = (uint32_t)(val * 2);
+	int nrBits = 32 - x264_clz(newVal / 2);
+	bs_write(s, nrBits, 0);
+	bs_write1(s, 1);//stop bit
+	newVal -= (1u << nrBits);
+	bs_write(s, nrBits, newVal);
+    /*int size = 0;
+    /* Faster than (val <= 0 ? -val*2+1 : val*2) /
+    /* 4 instructions on x86, 3 on ARM /
     int tmp = 1 - val*2;
     if( tmp < 0 ) tmp = val*2;
     val = tmp;
@@ -252,7 +303,7 @@ static inline void bs_write_se( bs_t *s, int val )
         tmp >>= 8;
     }
     size += x264_ue_size_tab[tmp];
-    bs_write( s, size, val );
+    bs_write( s, size, val );*/
 }
 
 static inline void bs_write_te( bs_t *s, int x, int val )
@@ -266,7 +317,7 @@ static inline void bs_write_te( bs_t *s, int x, int val )
 static inline void bs_rbsp_trailing( bs_t *s )
 {
     bs_write1( s, 1 );
-    bs_write( s, s->i_left&7, 0  );
+    bs_write( s, (32 - s->bit_count) &7, 0  );
 }
 
 static ALWAYS_INLINE int bs_size_ue( unsigned int val )

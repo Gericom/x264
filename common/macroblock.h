@@ -44,13 +44,13 @@ static const uint8_t x264_pred_i4x4_neighbors[12] =
 {
     MB_TOP,                         // I_PRED_4x4_V
     MB_LEFT,                        // I_PRED_4x4_H
+	MB_LEFT | MB_TOPLEFT | MB_TOP,	// I_PRED_4x4_PLANE
     MB_LEFT | MB_TOP,               // I_PRED_4x4_DC
-    MB_TOP  | MB_TOPRIGHT,          // I_PRED_4x4_DDL
-    MB_LEFT | MB_TOPLEFT | MB_TOP,  // I_PRED_4x4_DDR
-    MB_LEFT | MB_TOPLEFT | MB_TOP,  // I_PRED_4x4_VR
-    MB_LEFT | MB_TOPLEFT | MB_TOP,  // I_PRED_4x4_HD
-    MB_TOP  | MB_TOPRIGHT,          // I_PRED_4x4_VL
     MB_LEFT,                        // I_PRED_4x4_HU
+    MB_LEFT | MB_TOPLEFT | MB_TOP,  // I_PRED_4x4_HD
+    MB_LEFT | MB_TOPLEFT | MB_TOP,  // I_PRED_4x4_VR
+    MB_LEFT | MB_TOPLEFT | MB_TOP,  // I_PRED_4x4_DDR
+    MB_TOP  | MB_TOPRIGHT,          // I_PRED_4x4_DDL
     MB_LEFT,                        // I_PRED_4x4_DC_LEFT
     MB_TOP,                         // I_PRED_4x4_DC_TOP
     0                               // I_PRED_4x4_DC_128
@@ -138,6 +138,20 @@ enum mb_partition_e
     D_8x16            = 15,
     D_16x16           = 16,
     X264_PARTTYPE_MAX = 17,
+};
+
+enum mb_mobi_p_part
+{
+	MOBI_P_PART_FRAME0_DELTA0 = 0,
+	MOBI_P_PART_FRAME0 = 1,
+	MOBI_P_PART_FRAME1 = 2,
+	MOBI_P_PART_FRAME2 = 3,
+	MOBI_P_PART_FRAME3 = 4,
+	MOBI_P_PART_FRAME4 = 5,
+	MOBI_P_PART_INTRA_FULL = 6, //intra block with one predictor for the whole block
+	MOBI_P_PART_INTRA_SUB = 7, //intra block with a predictor for each sub block
+	MOBI_P_PART_H_SPLIT = 8, //16x16 becomes 2 times 16x8 for example
+	MOBI_P_PART_V_SPLIT = 9  //16x16 becomes 2 times 8x16 for example
 };
 
 static const uint8_t x264_mb_partition_listX_table[2][17] =
@@ -424,8 +438,8 @@ static ALWAYS_INLINE int x264_mb_predict_intra4x4_mode( x264_t *h, int idx )
     const int m  = X264_MIN( x264_mb_pred_mode4x4_fix(ma),
                              x264_mb_pred_mode4x4_fix(mb) );
 
-    if( m < 0 )
-        return I_PRED_4x4_DC;
+	if (m == 9)// < 0)
+		return I_PRED_4x4_DC;
 
     return m;
 }

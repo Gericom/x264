@@ -172,6 +172,8 @@ typedef struct
     int i_cqm_preset;
     const uint8_t *scaling_list[8]; /* could be 12, but we don't allow separate Cb/Cr lists */
 
+	int i_old_qp;
+
 } x264_pps_t;
 
 #define x264_cqm_init x264_template(cqm_init)

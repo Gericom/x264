@@ -1928,7 +1928,7 @@ static int encode( x264_param_t *param, cli_opt_t *opt )
     FAIL_IF_ERROR2( ticks_per_frame < 1 && !param->b_vfr_input, "ticks_per_frame invalid: %"PRId64"\n", ticks_per_frame );
     ticks_per_frame = X264_MAX( ticks_per_frame, 1 );
 
-    if( !param->b_repeat_headers )
+    /*if( !param->b_repeat_headers )
     {
         // Write SPS/PPS/SEI
         x264_nal_t *headers;
@@ -1936,7 +1936,7 @@ static int encode( x264_param_t *param, cli_opt_t *opt )
 
         FAIL_IF_ERROR2( x264_encoder_headers( h, &headers, &i_nal ) < 0, "x264_encoder_headers failed\n" );
         FAIL_IF_ERROR2( (i_file = cli_output.write_headers( opt->hout, headers )) < 0, "error writing headers to output file\n" );
-    }
+    }*/
 
     if( opt->tcfile_out )
         fprintf( opt->tcfile_out, "# timecode format v2\n" );

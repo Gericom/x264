@@ -189,7 +189,8 @@ void *x264_cli_mmap( cli_mmap_t *h, int64_t offset, size_t size )
     offset -= align;
     size   += align;
 #ifdef _WIN32
-    /* If the padding crosses a page boundary we need to increase the mapping size. */
+    /* If the padding crosses a page 
+	ary we need to increase the mapping size. */
     size_t padded_size = (-size & h->page_mask) < MMAP_PADDING ? size + MMAP_PADDING : size;
     if( offset + padded_size > h->file_size )
     {

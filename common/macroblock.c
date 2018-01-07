@@ -876,7 +876,8 @@ static void ALWAYS_INLINE macroblock_cache_load( x264_t *h, int mb_x, int mb_y, 
     {
         h->mb.cache.i_cbp_top = cbp[top];
         /* load intra4x4 */
-        CP32( &h->mb.cache.intra4x4_pred_mode[x264_scan8[0] - 8], &i4x4[top][0] );
+        //CP32( &h->mb.cache.intra4x4_pred_mode[x264_scan8[0] - 8], &i4x4[top][0] );
+		M32(&h->mb.cache.intra4x4_pred_mode[x264_scan8[0] - 8]) = 0xFFFFFFFFU;
 
         /* load non_zero_count */
         CP32( &h->mb.cache.non_zero_count[x264_scan8[ 0] - 8], &nnz[top][12] );
@@ -921,10 +922,14 @@ static void ALWAYS_INLINE macroblock_cache_load( x264_t *h, int mb_x, int mb_y, 
             h->mb.cache.i_cbp_left = cbp[ltop];
 
         /* load intra4x4 */
-        h->mb.cache.intra4x4_pred_mode[x264_scan8[ 0] - 1] = i4x4[ltop][left_index_table->intra[0]];
+        /*h->mb.cache.intra4x4_pred_mode[x264_scan8[ 0] - 1] = i4x4[ltop][left_index_table->intra[0]];
         h->mb.cache.intra4x4_pred_mode[x264_scan8[ 2] - 1] = i4x4[ltop][left_index_table->intra[1]];
         h->mb.cache.intra4x4_pred_mode[x264_scan8[ 8] - 1] = i4x4[lbot][left_index_table->intra[2]];
-        h->mb.cache.intra4x4_pred_mode[x264_scan8[10] - 1] = i4x4[lbot][left_index_table->intra[3]];
+        h->mb.cache.intra4x4_pred_mode[x264_scan8[10] - 1] = i4x4[lbot][left_index_table->intra[3]];*/
+		h->mb.cache.intra4x4_pred_mode[x264_scan8[0] - 1] =
+		h->mb.cache.intra4x4_pred_mode[x264_scan8[2] - 1] =
+		h->mb.cache.intra4x4_pred_mode[x264_scan8[8] - 1] =
+		h->mb.cache.intra4x4_pred_mode[x264_scan8[10] - 1] = -1;
 
         /* load non_zero_count */
         h->mb.cache.non_zero_count[x264_scan8[ 0] - 1] = nnz[ltop][left_index_table->nnz[0]];
@@ -1085,8 +1090,8 @@ static void ALWAYS_INLINE macroblock_cache_load( x264_t *h, int mb_x, int mb_y, 
         i8 = x264_scan8[0] + 4 - 1*8;
         if( h->mb.i_neighbour & MB_TOPRIGHT )
         {
-            int ir = b_mbaff ? 2*(s8x8*h->mb.i_mb_topright_y + (mb_x+1))+s8x8 : top_8x8 + 2;
-            int iv = b_mbaff ? 4*(s4x4*h->mb.i_mb_topright_y + (mb_x+1))+3*s4x4 : top_4x4 + 4;
+            int ir = b_mbaff ? 2*(s8x8*h->mb.i_mb_topright_y + (mb_x+1))+s8x8 : top_8x8 + 2 + 1;
+            int iv = b_mbaff ? 4*(s4x4*h->mb.i_mb_topright_y + (mb_x+1))+3*s4x4 : top_4x4 + 4 + 3;
             h->mb.cache.ref[l][i8] = ref[ir];
             CP32( h->mb.cache.mv[l][i8], mv[iv] );
         }
@@ -1302,7 +1307,7 @@ static void ALWAYS_INLINE macroblock_cache_load( x264_t *h, int mb_x, int mb_y, 
     }
 
     /* load skip */
-    if( h->sh.i_type == SLICE_TYPE_B )
+    /*if( h->sh.i_type == SLICE_TYPE_B )
     {
         h->mb.bipred_weight = h->mb.bipred_weight_buf[MB_INTERLACED][MB_INTERLACED&(mb_y&1)];
         h->mb.dist_scale_factor = h->mb.dist_scale_factor_buf[MB_INTERLACED][MB_INTERLACED&(mb_y&1)];
@@ -1327,7 +1332,7 @@ static void ALWAYS_INLINE macroblock_cache_load( x264_t *h, int mb_x, int mb_y, 
             h->mb.cache.skip[x264_scan8[0] - 8] = skipbp & 0x4;
             h->mb.cache.skip[x264_scan8[4] - 8] = skipbp & 0x8;
         }
-    }
+    }*/
 
     if( h->sh.i_type == SLICE_TYPE_P )
         x264_mb_predict_mv_pskip( h, h->mb.cache.pskip_mv );

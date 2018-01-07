@@ -398,18 +398,6 @@ static ALWAYS_INLINE void cabac_mb_header_i( x264_t *h, x264_cabac_t *cb, int i_
         /* suffix */
         cabac_mb_type_intra( h, cb, i_mb_type, 17+0, 17+1, 17+2, 17+2, 17+3, 17+3 );
     }
-    else if( slice_type == SLICE_TYPE_B )
-    {
-        /* prefix */
-        x264_cabac_encode_decision_noup( cb, 27+3,   1 );
-        x264_cabac_encode_decision_noup( cb, 27+4,   1 );
-        x264_cabac_encode_decision( cb, 27+5,   1 );
-        x264_cabac_encode_decision( cb, 27+5,   0 );
-        x264_cabac_encode_decision( cb, 27+5,   1 );
-
-        /* suffix */
-        cabac_mb_type_intra( h, cb, i_mb_type, 32+0, 32+1, 32+2, 32+2, 32+3, 32+3 );
-    }
 
     if( i_mb_type == I_PCM )
         return;

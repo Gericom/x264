@@ -166,18 +166,18 @@ static void sub4x4_dct( dctcoef dct[16], pixel *pix1, pixel *pix2 )
         int d03 = d[i*4+0] - d[i*4+3];
         int d12 = d[i*4+1] - d[i*4+2];
 
-        tmp[0*4+i] =   s03 +   s12;
-        tmp[1*4+i] = 2*d03 +   d12;
-        tmp[2*4+i] =   s03 -   s12;
-        tmp[3*4+i] =   d03 - 2*d12;
+        tmp[0+4*i] =   s03 +   s12;
+        tmp[1+4*i] = 2*d03 +   d12;
+        tmp[2+4*i] =   s03 -   s12;
+        tmp[3+4*i] =   d03 - 2*d12;
     }
 
     for( int i = 0; i < 4; i++ )
     {
-        int s03 = tmp[i*4+0] + tmp[i*4+3];
-        int s12 = tmp[i*4+1] + tmp[i*4+2];
-        int d03 = tmp[i*4+0] - tmp[i*4+3];
-        int d12 = tmp[i*4+1] - tmp[i*4+2];
+        int s03 = tmp[i+4*0] + tmp[i+4*3];
+        int s12 = tmp[i+4*1] + tmp[i+4*2];
+        int d03 = tmp[i+4*0] - tmp[i+4*3];
+        int d12 = tmp[i+4*1] - tmp[i+4*2];
 
         dct[i*4+0] =   s03 +   s12;
         dct[i*4+1] = 2*d03 +   d12;
@@ -274,28 +274,28 @@ static void add4x4_idct( pixel *p_dst, dctcoef dct[16] )
 
     for( int i = 0; i < 4; i++ )
     {
-        int s02 =  dct[0*4+i]     +  dct[2*4+i];
-        int d02 =  dct[0*4+i]     -  dct[2*4+i];
-        int s13 =  dct[1*4+i]     + (dct[3*4+i]>>1);
-        int d13 = (dct[1*4+i]>>1) -  dct[3*4+i];
+        int s02 =  dct[0+4*i]     +  dct[2+4*i];
+        int d02 =  dct[0+4*i]     -  dct[2+4*i];
+        int s13 =  dct[1+4*i]     + (dct[3+4*i]>>1);
+        int d13 = (dct[1+4*i]>>1) -  dct[3+4*i];
 
-        tmp[i*4+0] = s02 + s13;
-        tmp[i*4+1] = d02 + d13;
-        tmp[i*4+2] = d02 - d13;
-        tmp[i*4+3] = s02 - s13;
+        tmp[i+4*0] = s02 + s13;
+        tmp[i+4*1] = d02 + d13;
+        tmp[i+4*2] = d02 - d13;
+        tmp[i+4*3] = s02 - s13;
     }
 
     for( int i = 0; i < 4; i++ )
     {
-        int s02 =  tmp[0*4+i]     +  tmp[2*4+i];
-        int d02 =  tmp[0*4+i]     -  tmp[2*4+i];
-        int s13 =  tmp[1*4+i]     + (tmp[3*4+i]>>1);
-        int d13 = (tmp[1*4+i]>>1) -  tmp[3*4+i];
+		int s02 = tmp[0 + 4 * i] + tmp[2 + 4 * i];
+		int d02 = tmp[0 + 4 * i] - tmp[2 + 4 * i];
+		int s13 = tmp[1 + 4 * i] + (tmp[3 + 4 * i] >> 1);
+		int d13 = (tmp[1 + 4 * i] >> 1) - tmp[3 + 4 * i];
 
-        d[0*4+i] = ( s02 + s13 + 32 ) >> 6;
-        d[1*4+i] = ( d02 + d13 + 32 ) >> 6;
-        d[2*4+i] = ( d02 - d13 + 32 ) >> 6;
-        d[3*4+i] = ( s02 - s13 + 32 ) >> 6;
+        d[0+4*i] = ( s02 + s13 + 32 ) >> 6;
+        d[1+4*i] = ( d02 + d13 + 32 ) >> 6;
+        d[2+4*i] = ( d02 - d13 + 32 ) >> 6;
+        d[3+4*i] = ( s02 - s13 + 32 ) >> 6;
     }
 
 
@@ -360,7 +360,7 @@ static void sub8x8_dct8( dctcoef dct[64], pixel *pix1, pixel *pix2 )
 
     pixel_sub_wxh( tmp, 8, pix1, FENC_STRIDE, pix2, FDEC_STRIDE );
 
-#define SRC(x) tmp[x*8+i]
+/*#define SRC(x) tmp[x*8+i]
 #define DST(x) tmp[x*8+i]
     for( int i = 0; i < 8; i++ )
         DCT8_1D
@@ -371,6 +371,19 @@ static void sub8x8_dct8( dctcoef dct[64], pixel *pix1, pixel *pix2 )
 #define DST(x) dct[x*8+i]
     for( int i = 0; i < 8; i++ )
         DCT8_1D
+#undef SRC
+#undef DST*/
+#define SRC(x) tmp[i*8+x]
+#define DST(x) tmp[i*8+x]
+	for (int i = 0; i < 8; i++)
+		DCT8_1D
+#undef SRC
+#undef DST
+
+#define SRC(x) tmp[8*x+i]
+#define DST(x) dct[i*8+x]
+		for (int i = 0; i < 8; i++)
+			DCT8_1D
 #undef SRC
 #undef DST
 }
@@ -412,9 +425,10 @@ static void sub16x16_dct8( dctcoef dct[4][64], pixel *pix1, pixel *pix2 )
 
 static void add8x8_idct8( pixel *dst, dctcoef dct[64] )
 {
+	dctcoef tmp[64];
     dct[0] += 32; // rounding for the >>6 at the end
 
-#define SRC(x)     dct[x*8+i]
+/*#define SRC(x)     dct[x*8+i]
 #define DST(x,rhs) dct[x*8+i] = (rhs)
     for( int i = 0; i < 8; i++ )
         IDCT8_1D
@@ -425,6 +439,19 @@ static void add8x8_idct8( pixel *dst, dctcoef dct[64] )
 #define DST(x,rhs) dst[i + x*FDEC_STRIDE] = x264_clip_pixel( dst[i + x*FDEC_STRIDE] + ((rhs) >> 6) );
     for( int i = 0; i < 8; i++ )
         IDCT8_1D
+#undef SRC
+#undef DST*/
+#define SRC(x)     dct[i*8+x]
+#define DST(x,rhs) tmp[x*8+i] = (rhs)
+	for (int i = 0; i < 8; i++)
+		IDCT8_1D
+#undef SRC
+#undef DST
+
+#define SRC(x)     tmp[i*8+x]
+#define DST(x,rhs) dst[i*FDEC_STRIDE+x] = x264_clip_pixel( dst[i*FDEC_STRIDE+x] + ((rhs) >> 6) );
+		for (int i = 0; i < 8; i++)
+			IDCT8_1D
 #undef SRC
 #undef DST
 }
@@ -498,6 +525,7 @@ void x264_dct_init( int cpu, x264_dct_function_t *dctf )
     dctf->idct4x4dc = idct4x4dc;
 
     dctf->dct2x4dc = dct2x4dc;
+	return;
 
 #if HIGH_BIT_DEPTH
 #if HAVE_MMX

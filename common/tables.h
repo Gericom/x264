@@ -94,4 +94,12 @@ extern const vlc_t x264_total_zeros_2x2_dc[3][4];
 extern const vlc_t x264_total_zeros_2x4_dc[7][8];
 extern const vlc_t x264_run_before_init[7][16];
 
+extern const uint16_t vx2_table0_a[];
+extern const uint8_t vx2_table0_b[];
+extern const uint16_t vx2_table1_a[];
+extern const uint8_t vx2_table1_b[];
+extern const int vx2_table0_a_rev[32][64][2];
+extern const int vx2_table1_a_rev[32][64][2];
+const uint8_t ZigZagTable8x8[64];
+
 #endif

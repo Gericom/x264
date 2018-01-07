@@ -1434,12 +1434,12 @@ void x264_ratecontrol_start( x264_t *h, int i_force_qp, int overhead )
         assert( frame >= 0 && frame < rc->num_entries );
         rce = h->rc->rce = &h->rc->entry[frame];
 
-        if( h->sh.i_type == SLICE_TYPE_B
+        /*if( h->sh.i_type == SLICE_TYPE_B
             && h->param.analyse.i_direct_mv_pred == X264_DIRECT_PRED_AUTO )
         {
             h->sh.b_direct_spatial_mv_pred = ( rce->direct_mode == 's' );
             h->mb.b_direct_auto_read = ( rce->direct_mode == 's' || rce->direct_mode == 't' );
-        }
+        }*/
     }
 
     if( rc->b_vbv )
@@ -1639,11 +1639,11 @@ int x264_ratecontrol_mb( x264_t *h, int bits )
     if( y < h->i_threadslice_end-1 )
     {
         /* B-frames shouldn't use lower QP than their reference frames. */
-        if( h->sh.i_type == SLICE_TYPE_B )
+        /*if( h->sh.i_type == SLICE_TYPE_B )
         {
             qp_min = X264_MAX( qp_min, X264_MAX( h->fref[0][0]->f_row_qp[y+1], h->fref[1][0]->f_row_qp[y+1] ) );
             rc->qpm = X264_MAX( rc->qpm, qp_min );
-        }
+        }*/
 
         float buffer_left_planned = rc->buffer_fill - rc->frame_size_planned;
         buffer_left_planned = X264_MAX( buffer_left_planned, 0.f );
@@ -1741,15 +1741,15 @@ int x264_ratecontrol_mb_qp( x264_t *h )
 {
     x264_emms();
     float qp = h->rc->qpm;
-    if( h->param.rc.i_aq_mode )
+    /*if( h->param.rc.i_aq_mode )
     {
-         /* MB-tree currently doesn't adjust quantizers in unreferenced frames. */
+         /* MB-tree currently doesn't adjust quantizers in unreferenced frames. /
         float qp_offset = h->fdec->b_kept_as_ref ? h->fenc->f_qp_offset[h->mb.i_mb_xy] : h->fenc->f_qp_offset_aq[h->mb.i_mb_xy];
-        /* Scale AQ's effect towards zero in emergency mode. */
+        /* Scale AQ's effect towards zero in emergency mode. /
         if( qp > QP_MAX_SPEC )
             qp_offset *= (QP_MAX - qp) / (QP_MAX - QP_MAX_SPEC);
         qp += qp_offset;
-    }
+    }*/
     return x264_clip3( qp + 0.5f, h->param.rc.i_qp_min, h->param.rc.i_qp_max );
 }
 

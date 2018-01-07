@@ -493,32 +493,31 @@ void x264_predict_8x8_init_mmx( int cpu, x264_predict8x8_t pf[12], x264_predict_
     pf[I_PRED_8x8_DC]     = x264_predict_8x8_dc_sse2;
     pf[I_PRED_8x8_DC_TOP] = x264_predict_8x8_dc_top_sse2;
     pf[I_PRED_8x8_DC_LEFT]= x264_predict_8x8_dc_left_sse2;
-    pf[I_PRED_8x8_DDL]    = x264_predict_8x8_ddl_sse2;
+    pf[I_PRED_8x8_PLANE]    = x264_predict_8x8_dc_sse2;
     pf[I_PRED_8x8_DDR]    = x264_predict_8x8_ddr_sse2;
-    pf[I_PRED_8x8_VL]     = x264_predict_8x8_vl_sse2;
+    pf[I_PRED_8x8_DDL]     = x264_predict_8x8_ddl_sse2;
     pf[I_PRED_8x8_VR]     = x264_predict_8x8_vr_sse2;
     pf[I_PRED_8x8_HD]     = x264_predict_8x8_hd_sse2;
     pf[I_PRED_8x8_HU]     = x264_predict_8x8_hu_sse2;
     *predict_8x8_filter   = x264_predict_8x8_filter_sse2;
     if( !(cpu&X264_CPU_SSSE3) )
         return;
-    pf[I_PRED_8x8_DDL]    = x264_predict_8x8_ddl_ssse3;
+    pf[I_PRED_8x8_PLANE]    = x264_predict_8x8_ddl_ssse3;
     pf[I_PRED_8x8_DDR]    = x264_predict_8x8_ddr_ssse3;
     pf[I_PRED_8x8_HD]     = x264_predict_8x8_hd_ssse3;
     pf[I_PRED_8x8_HU]     = x264_predict_8x8_hu_ssse3;
-    pf[I_PRED_8x8_VL]     = x264_predict_8x8_vl_ssse3;
+    pf[I_PRED_8x8_DDL]     = x264_predict_8x8_ddl_ssse3;
     pf[I_PRED_8x8_VR]     = x264_predict_8x8_vr_ssse3;
     *predict_8x8_filter   = x264_predict_8x8_filter_ssse3;
     if( cpu&X264_CPU_CACHELINE_64 )
     {
-        pf[I_PRED_8x8_DDL]= x264_predict_8x8_ddl_cache64_ssse3;
+        pf[I_PRED_8x8_PLANE]= x264_predict_8x8_ddl_cache64_ssse3;
         pf[I_PRED_8x8_DDR]= x264_predict_8x8_ddr_cache64_ssse3;
     }
     if( !(cpu&X264_CPU_AVX) )
         return;
     pf[I_PRED_8x8_HD]     = x264_predict_8x8_hd_avx;
     pf[I_PRED_8x8_HU]     = x264_predict_8x8_hu_avx;
-    pf[I_PRED_8x8_VL]     = x264_predict_8x8_vl_avx;
     pf[I_PRED_8x8_VR]     = x264_predict_8x8_vr_avx;
     *predict_8x8_filter   = x264_predict_8x8_filter_avx;
 #else
@@ -528,18 +527,18 @@ void x264_predict_8x8_init_mmx( int cpu, x264_predict8x8_t pf[12], x264_predict_
     pf[I_PRED_8x8_DC_TOP] = x264_predict_8x8_dc_top_mmx2;
     pf[I_PRED_8x8_DC_LEFT]= x264_predict_8x8_dc_left_mmx2;
     pf[I_PRED_8x8_HD]     = x264_predict_8x8_hd_mmx2;
-    pf[I_PRED_8x8_VL]     = x264_predict_8x8_vl_mmx2;
     *predict_8x8_filter   = x264_predict_8x8_filter_mmx2;
 #if ARCH_X86
-    pf[I_PRED_8x8_DDL]  = x264_predict_8x8_ddl_mmx2;
+	pf[I_PRED_8x8_DDL] = x264_predict_8x8_ddl_mmx2;
+    pf[I_PRED_8x8_PLANE]  = x264_predict_8x8_ddl_mmx2;
     pf[I_PRED_8x8_DDR]  = x264_predict_8x8_ddr_mmx2;
     pf[I_PRED_8x8_VR]   = x264_predict_8x8_vr_mmx2;
     pf[I_PRED_8x8_HU]   = x264_predict_8x8_hu_mmx2;
 #endif
     if( !(cpu&X264_CPU_SSE2) )
         return;
-    pf[I_PRED_8x8_DDL]  = x264_predict_8x8_ddl_sse2;
-    pf[I_PRED_8x8_VL]   = x264_predict_8x8_vl_sse2;
+    pf[I_PRED_8x8_PLANE]  = x264_predict_8x8_ddl_sse2;
+    pf[I_PRED_8x8_DDL]   = x264_predict_8x8_ddl_sse2;
     pf[I_PRED_8x8_VR]   = x264_predict_8x8_vr_sse2;
     pf[I_PRED_8x8_DDR]  = x264_predict_8x8_ddr_sse2;
     pf[I_PRED_8x8_HD]   = x264_predict_8x8_hd_sse2;
@@ -548,16 +547,16 @@ void x264_predict_8x8_init_mmx( int cpu, x264_predict8x8_t pf[12], x264_predict_
         return;
     if( !(cpu&X264_CPU_SLOW_PALIGNR) )
     {
-        pf[I_PRED_8x8_DDL]  = x264_predict_8x8_ddl_ssse3;
+        pf[I_PRED_8x8_PLANE]  = x264_predict_8x8_ddl_ssse3;
         pf[I_PRED_8x8_VR]   = x264_predict_8x8_vr_ssse3;
     }
     pf[I_PRED_8x8_HU]   = x264_predict_8x8_hu_ssse3;
     *predict_8x8_filter = x264_predict_8x8_filter_ssse3;
     if( !(cpu&X264_CPU_AVX) )
         return;
-    pf[I_PRED_8x8_DDL]  = x264_predict_8x8_ddl_avx;
+    pf[I_PRED_8x8_PLANE]  = x264_predict_8x8_ddl_avx;
     pf[I_PRED_8x8_DDR]  = x264_predict_8x8_ddr_avx;
-    pf[I_PRED_8x8_VL]   = x264_predict_8x8_vl_avx;
+    pf[I_PRED_8x8_DDL]   = x264_predict_8x8_ddl_avx;
     pf[I_PRED_8x8_VR]   = x264_predict_8x8_vr_avx;
     pf[I_PRED_8x8_HD]   = x264_predict_8x8_hd_avx;
 #endif // HIGH_BIT_DEPTH
@@ -568,18 +567,18 @@ void x264_predict_4x4_init_mmx( int cpu, x264_predict_t pf[12] )
     if( !(cpu&X264_CPU_MMX2) )
         return;
     pf[I_PRED_4x4_DC]  = x264_predict_4x4_dc_mmx2;
-    pf[I_PRED_4x4_DDL] = x264_predict_4x4_ddl_mmx2;
+    pf[I_PRED_4x4_PLANE] = x264_predict_4x4_ddl_mmx2;
     pf[I_PRED_4x4_DDR] = x264_predict_4x4_ddr_mmx2;
-    pf[I_PRED_4x4_VL]  = x264_predict_4x4_vl_mmx2;
+    pf[I_PRED_4x4_DDL]  = x264_predict_4x4_ddl_mmx2;
     pf[I_PRED_4x4_HD]  = x264_predict_4x4_hd_mmx2;
     pf[I_PRED_4x4_HU]  = x264_predict_4x4_hu_mmx2;
 #if HIGH_BIT_DEPTH
     if( !(cpu&X264_CPU_SSE2) )
         return;
-    pf[I_PRED_4x4_DDL] = x264_predict_4x4_ddl_sse2;
+    pf[I_PRED_4x4_PLANE] = x264_predict_4x4_ddl_sse2;
     pf[I_PRED_4x4_DDR] = x264_predict_4x4_ddr_sse2;
     pf[I_PRED_4x4_HD]  = x264_predict_4x4_hd_sse2;
-    pf[I_PRED_4x4_VL]  = x264_predict_4x4_vl_sse2;
+    pf[I_PRED_4x4_DDL]  = x264_predict_4x4_ddl_sse2;
     pf[I_PRED_4x4_VR]  = x264_predict_4x4_vr_sse2;
     if( !(cpu&X264_CPU_SSSE3) )
         return;
@@ -588,10 +587,10 @@ void x264_predict_4x4_init_mmx( int cpu, x264_predict_t pf[12] )
     pf[I_PRED_4x4_HD]  = x264_predict_4x4_hd_ssse3;
     if( !(cpu&X264_CPU_AVX) )
         return;
-    pf[I_PRED_4x4_DDL] = x264_predict_4x4_ddl_avx;
+    pf[I_PRED_4x4_PLANE] = x264_predict_4x4_ddl_avx;
     pf[I_PRED_4x4_DDR] = x264_predict_4x4_ddr_avx;
     pf[I_PRED_4x4_HD]  = x264_predict_4x4_hd_avx;
-    pf[I_PRED_4x4_VL]  = x264_predict_4x4_vl_avx;
+    pf[I_PRED_4x4_DDL]  = x264_predict_4x4_ddl_avx;
     pf[I_PRED_4x4_VR]  = x264_predict_4x4_vr_avx;
     if( !(cpu&X264_CPU_AVX2) )
         return;
