@@ -1044,8 +1044,6 @@ static void encode_p_block(x264_t *h)
 	bs_t *s = &h->out.bs;
 	if (h->mb.i_type == P_L0 || h->mb.i_type == P_8x8)
 	{
-		
-
 		//int px = x264_median(h->mb.cache.mv[0][x264_scan8[15] - 4][0], h->mb.cache.mv[0][x264_scan8[0] - 5][0], h->mb.cache.mv[0][x264_scan8[0] - 4][0]);
 		//int py = x264_median(h->mb.cache.mv[0][x264_scan8[15] - 4][1], h->mb.cache.mv[0][x264_scan8[0] - 5][1], h->mb.cache.mv[0][x264_scan8[0] - 4][1]);
 		//int px = vals[2];//x264_median(h->mb.cache.mv[0][x264_scan8[0] - 1][0], h->mb.cache.mv[0][x264_scan8[0] - 8][0], h->mb.cache.mv[0][x264_scan8[0] - 8 + 4][0]);
@@ -1057,13 +1055,19 @@ static void encode_p_block(x264_t *h)
 		//}
 		//int16_t mv[2];
 		//x264_mb_predict_mv(h, 0, 0, 4, mv);
+#if !RDO_SKIP_BS
+		int tmp = bs_pos(s);
+#endif
 		int lastMv[2];
 		mobi_encode_p_partition(h, 0, 16, 16, px, py, lastMv);
+#if !RDO_SKIP_BS
+		h->stat.frame.i_mv_bits += bs_pos(s) - tmp;
+#endif
 		//mvcache[h->mb.i_mb_x + 1][0] = lastMv[0];
 		//mvcache[h->mb.i_mb_x + 1][1] = lastMv[1];
 		//which blocks are actually coded
 #if !RDO_SKIP_BS
-		int tmp = bs_pos(s);
+		tmp = bs_pos(s);
 #endif
 		BOOL use8x8 = x264_mb_transform_8x8_allowed(h) && h->mb.b_transform_8x8;
 		uint8_t mask =
@@ -1171,9 +1175,15 @@ static void encode_p_block(x264_t *h)
 	}
 	else if (h->mb.i_type == P_SKIP)
 	{
+#if !RDO_SKIP_BS
+		int tmp = bs_pos(s);
+#endif			
 		int lastMv[2];
 		mobi_encode_p_partition(h, 0, 16, 16, px, py, lastMv);
 		bs_write_ue(s, REV_byte_116160[0]);
+#if !RDO_SKIP_BS
+		h->stat.frame.i_mv_bits += bs_pos(s) - tmp;
+#endif
 	}
 	else //if( IS_INTRA( i_mb_type ) )
 		encode_i_block(h);
