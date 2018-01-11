@@ -50,7 +50,7 @@ static inline void pixel_avg( pixel *dst,  intptr_t i_dst_stride,
     for( int y = 0; y < i_height; y++ )
     {
         for( int x = 0; x < i_width; x++ )
-            dst[x] = ( src1[x] + src2[x] + 1 ) >> 1;
+            dst[x] = ( (src1[x] >> 1) + (src2[x] >> 1));
         dst  += i_dst_stride;
         src1 += i_src1_stride;
         src2 += i_src2_stride;
@@ -64,7 +64,7 @@ static inline void pixel_avg_wxh( pixel *dst,  intptr_t i_dst,
     for( int y = 0; y < height; y++ )
     {
         for( int x = 0; x < width; x++ )
-            dst[x] = ( src1[x] + src2[x] + 1 ) >> 1;
+			dst[x] = ((src1[x] >> 1) + (src2[x] >> 1));
         src1 += i_src1;
         src2 += i_src2;
         dst += i_dst;
@@ -171,14 +171,14 @@ static void mc_copy( pixel *src, intptr_t i_src_stride, pixel *dst, intptr_t i_d
 static void hpel_filter( pixel *dsth, pixel *dstv, pixel *dstc, pixel *src,
                          intptr_t stride, int width, int height, int16_t *buf )
 {
-    const int pad = (BIT_DEPTH > 9) ? (-10 * PIXEL_MAX) : 0;
+    /*const int pad = (BIT_DEPTH > 9) ? (-10 * PIXEL_MAX) : 0;
     for( int y = 0; y < height; y++ )
     {
         for( int x = -2; x < width+3; x++ )
         {
             int v = TAPFILTER(src,stride);
             dstv[x] = x264_clip_pixel( (v + 16) >> 5 );
-            /* transform v for storage in a 16-bit integer */
+            /* transform v for storage in a 16-bit integer /
             buf[x+2] = v + pad;
         }
         for( int x = 0; x < width; x++ )
@@ -189,7 +189,20 @@ static void hpel_filter( pixel *dsth, pixel *dstv, pixel *dstc, pixel *src,
         dstv += stride;
         dstc += stride;
         src += stride;
-    }
+    }*/
+	for (int y = 0; y < height; y++)
+	{
+		for (int x = 0; x < width - 1; x++)
+		{
+			dsth[x] = (src[x] >> 1) + (src[x + 1] >> 1);
+			dstv[x] = (src[x] >> 1) + (src[x + stride] >> 1);
+			dstc[x] = (((src[x] >> 1) + (src[x + 1] >> 1)) >> 1) + (((src[x + stride] >> 1) + (src[x + stride + 1] >> 1)) >> 1);
+		}
+		dsth += stride;
+		dstv += stride;
+		dstc += stride;
+		src += stride;
+	}
 }
 
 static void mc_luma( pixel *dst,    intptr_t i_dst_stride,
@@ -197,11 +210,13 @@ static void mc_luma( pixel *dst,    intptr_t i_dst_stride,
                      int mvx, int mvy,
                      int i_width, int i_height, const x264_weight_t *weight )
 {
-    int qpel_idx = ((mvy&3)<<2) + (mvx&3);
+	mvx >>= 1;
+	mvy >>= 1;
+    /*int qpel_idx = ((mvy&3)<<2) + (mvx&3);
     int offset = (mvy>>2)*i_src_stride + (mvx>>2);
     pixel *src1 = src[x264_hpel_ref0[qpel_idx]] + offset + ((mvy&3) == 3) * i_src_stride;
 
-    if( qpel_idx & 5 ) /* qpel interpolation needed */
+    if( qpel_idx & 5 ) /* qpel interpolation needed /
     {
         pixel *src2 = src[x264_hpel_ref1[qpel_idx]] + offset + ((mvx&3) == 3);
         pixel_avg( dst, i_dst_stride, src1, i_src_stride,
@@ -212,7 +227,36 @@ static void mc_luma( pixel *dst,    intptr_t i_dst_stride,
     else if( weight->weightfn )
         mc_weight( dst, i_dst_stride, src1, i_src_stride, weight, i_width, i_height );
     else
-        mc_copy( src1, i_src_stride, dst, i_dst_stride, i_width, i_height );
+        mc_copy( src1, i_src_stride, dst, i_dst_stride, i_width, i_height );*/
+	pixel* src1 = src[0] + ((mvy >> 1) * i_src_stride) + (mvx >> 1);
+	if(!((mvx & 1) | ((mvy & 1) << 1)))
+		mc_copy(src1, i_src_stride, dst, i_dst_stride, i_width, i_height);
+	else
+	{
+		for (int i = 0; i < i_height; i++)
+		{
+			switch ((mvx & 1) | ((mvy & 1) << 1))
+			{
+				//case 0:
+				//	memcpy(dst, src1, i_width);
+				//	break;
+				case 1:
+					for (int j = 0; j < i_width; j++)
+						dst[j] = (src1[j] >> 1) + (src1[j + 1] >> 1);
+					break;
+				case 2:
+					for (int j = 0; j < i_width; j++)
+						dst[j] = (src1[j] >> 1) + (src1[j + i_src_stride] >> 1);
+					break;
+				case 3:
+					for (int j = 0; j < i_width; j++)
+						dst[j] = (((src1[j] >> 1) + (src1[j + 1] >> 1)) >> 1) + (((src1[j + i_src_stride] >> 1) + (src1[j + 1 + i_src_stride] >> 1)) >> 1);
+					break;
+			}
+			src1 += i_src_stride;
+			dst += i_dst_stride;
+		}
+	}
 }
 
 static pixel *get_ref( pixel *dst,   intptr_t *i_dst_stride,
@@ -251,10 +295,10 @@ static void mc_chroma( pixel *dstu, pixel *dstv, intptr_t i_dst_stride,
                        int mvx, int mvy,
                        int i_width, int i_height )
 {
-    pixel *srcp;
+    /*pixel *srcp;
 
-    int d8x = mvx&0x07;
-    int d8y = mvy&0x07;
+    int d8x = mvx&0x06;
+    int d8y = mvy&0x06;
     int cA = (8-d8x)*(8-d8y);
     int cB = d8x    *(8-d8y);
     int cC = (8-d8x)*d8y;
@@ -276,7 +320,47 @@ static void mc_chroma( pixel *dstu, pixel *dstv, intptr_t i_dst_stride,
         dstv += i_dst_stride;
         src   = srcp;
         srcp += i_src_stride;
-    }
+    }*/
+	mvx >>= 2;
+	mvy >>= 2;
+	pixel* src1 = src + ((mvy >> 1) * i_src_stride) + (mvx >> 1) * 2;
+	for (int i = 0; i < i_height; i++)
+	{
+		switch ((mvx & 1) | ((mvy & 1) << 1))
+		{
+			case 0:
+				for (int j = 0; j < i_width; j++)
+				{
+					dstu[j] = src1[2 * j];
+					dstv[j] = src1[2 * j + 1];
+				}
+				break;
+			case 1:
+				for (int j = 0; j < i_width; j++)
+				{
+					dstu[j] = (src1[2 * j] >> 1) + (src1[2 * j + 2] >> 1);
+					dstv[j] = (src1[2 * j + 1] >> 1) + (src1[2 * j + 1 + 2] >> 1);
+				}
+				break;
+			case 2:
+				for (int j = 0; j < i_width; j++)
+				{
+					dstu[j] = (src1[2 * j] >> 1) + (src1[2 * j + i_src_stride] >> 1);
+					dstv[j] = (src1[2 * j + 1] >> 1) + (src1[2 * j + 1 + i_src_stride] >> 1);
+				}
+				break;
+			case 3:
+				for (int j = 0; j < i_width; j++)
+				{
+					dstu[j] = (((src1[2 * j] >> 1) + (src1[2 * j + 2] >> 1)) >> 1) + (((src1[2 * j + i_src_stride] >> 1) + (src1[2 * j + 2 + i_src_stride] >> 1)) >> 1);
+					dstv[j] = (((src1[2 * j + 1] >> 1) + (src1[2 * j + 1 + 2] >> 1)) >> 1) + (((src1[2 * j + 1 + i_src_stride] >> 1) + (src1[2 * j + 1 + 2 + i_src_stride] >> 1)) >> 1);
+				}
+				break;
+		}
+		src1 += i_src_stride;
+		dstu += i_dst_stride;
+		dstv += i_dst_stride;
+	}
 }
 
 #define MC_COPY(W) \
@@ -669,6 +753,7 @@ void x264_mc_init( int cpu, x264_mc_functions_t *pf, int cpu_independent )
     pf->mbtree_fix8_pack      = mbtree_fix8_pack;
     pf->mbtree_fix8_unpack    = mbtree_fix8_unpack;
 
+	/*
 #if HAVE_MMX
     x264_mc_init_mmx( cpu, pf );
 #endif
@@ -685,7 +770,7 @@ void x264_mc_init( int cpu, x264_mc_functions_t *pf, int cpu_independent )
 #if HAVE_MSA
     if( cpu&X264_CPU_MSA )
         x264_mc_init_mips( cpu, pf );
-#endif
+#endif*/
 
     if( cpu_independent )
     {

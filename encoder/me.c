@@ -797,6 +797,20 @@ void x264_me_search_ref( x264_t *h, x264_me_t *m, int16_t (*mvc)[2], int i_mvc, 
         int qpel = subpel_iterations[h->mb.i_subpel_refine][3];
         refine_subpel( h, m, hpel, qpel, p_halfpel_thresh, 0 );
     }
+
+	//mobiclip does not support quarter pels
+	m->mv[0] &= ~1;
+	m->mv[1] &= ~1;
+
+	//make sure we stay within the frame
+	if (m->mv[0] < h->mb.mv_min[0])
+		m->mv[0] = h->mb.mv_min[0];
+	if (m->mv[0] > h->mb.mv_max[0])
+		m->mv[0] = h->mb.mv_max[0];
+	if (m->mv[1] < h->mb.mv_min[1])
+		m->mv[1] = h->mb.mv_min[1];
+	if (m->mv[1] > h->mb.mv_max[1])
+		m->mv[1] = h->mb.mv_max[1];
 }
 #undef COST_MV
 

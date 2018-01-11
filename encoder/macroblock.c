@@ -644,7 +644,7 @@ static ALWAYS_INLINE void macroblock_encode_internal( x264_t *h, int plane_count
         return;
     }*/
 
-    if(!h->mb.b_allow_skip )
+    if(FALSE)//!h->mb.b_allow_skip )
     {
         b_force_no_skip = 1;
         if( IS_SKIP(h->mb.i_type) )
@@ -992,6 +992,7 @@ void x264_macroblock_encode( x264_t *h )
  *****************************************************************************/
 static ALWAYS_INLINE int macroblock_probe_skip_internal( x264_t *h, int b_bidir, int plane_count, int chroma )
 {
+	return 0;
     ALIGNED_ARRAY_64( dctcoef, dct4x4,[8],[16] );
     ALIGNED_ARRAY_64( dctcoef, dctscan,[16] );
     ALIGNED_4( int16_t mvp[2] );

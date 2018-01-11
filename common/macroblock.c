@@ -38,8 +38,8 @@ static NOINLINE void mb_mc_0xywh( x264_t *h, int x, int y, int width, int height
 {
     int i8    = x264_scan8[0]+x+8*y;
     int i_ref = h->mb.cache.ref[0][i8];
-    int mvx   = x264_clip3( h->mb.cache.mv[0][i8][0], h->mb.mv_min[0], h->mb.mv_max[0] ) + 4*4*x;
-    int mvy   = x264_clip3( h->mb.cache.mv[0][i8][1], h->mb.mv_min[1], h->mb.mv_max[1] ) + 4*4*y;
+    int mvx   = h->mb.cache.mv[0][i8][0] /*x264_clip3( h->mb.cache.mv[0][i8][0], h->mb.mv_min[0], h->mb.mv_max[0] )*/ + 4*4*x;
+    int mvy   = h->mb.cache.mv[0][i8][1] /*x264_clip3( h->mb.cache.mv[0][i8][1], h->mb.mv_min[1], h->mb.mv_max[1] )*/ + 4*4*y;
 
     MC_LUMA( 0, 0 );
 
