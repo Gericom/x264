@@ -2734,8 +2734,8 @@ static intptr_t slice_write( x264_t *h )
                 return -1;
             if( !(i_mb_y & SLICE_MBAFF) && h->param.rc.i_vbv_buffer_size )
                 bitstream_backup( h, &bs_bak[BS_BAK_ROW_VBV], i_skip, 1 );
-            //if( !h->mb.b_reencode_mb )
-            //    fdec_filter_row( h, i_mb_y, 0 );
+            if( !h->mb.b_reencode_mb )
+                fdec_filter_row( h, i_mb_y, 0 );
         }
 
         if( back_up_bitstream )

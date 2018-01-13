@@ -228,7 +228,9 @@ static void mc_luma( pixel *dst,    intptr_t i_dst_stride,
         mc_weight( dst, i_dst_stride, src1, i_src_stride, weight, i_width, i_height );
     else
         mc_copy( src1, i_src_stride, dst, i_dst_stride, i_width, i_height );*/
-	pixel* src1 = src[0] + ((mvy >> 1) * i_src_stride) + (mvx >> 1);
+	mc_copy(src[(mvx & 1) | ((mvy & 1) << 1)] + ((mvy >> 1) * i_src_stride) + (mvx >> 1), i_src_stride, dst, i_dst_stride, i_width, i_height);
+	//return;
+	/*pixel* src1 = src[0] + ((mvy >> 1) * i_src_stride) + (mvx >> 1);
 	if(!((mvx & 1) | ((mvy & 1) << 1)))
 		mc_copy(src1, i_src_stride, dst, i_dst_stride, i_width, i_height);
 	else
@@ -256,7 +258,7 @@ static void mc_luma( pixel *dst,    intptr_t i_dst_stride,
 			src1 += i_src_stride;
 			dst += i_dst_stride;
 		}
-	}
+	}*/
 }
 
 static pixel *get_ref( pixel *dst,   intptr_t *i_dst_stride,
@@ -264,11 +266,11 @@ static pixel *get_ref( pixel *dst,   intptr_t *i_dst_stride,
                        int mvx, int mvy,
                        int i_width, int i_height, const x264_weight_t *weight )
 {
-    int qpel_idx = ((mvy&3)<<2) + (mvx&3);
+    /*int qpel_idx = ((mvy&3)<<2) + (mvx&3);
     int offset = (mvy>>2)*i_src_stride + (mvx>>2);
     pixel *src1 = src[x264_hpel_ref0[qpel_idx]] + offset + ((mvy&3) == 3) * i_src_stride;
 
-    if( qpel_idx & 5 ) /* qpel interpolation needed */
+    if( qpel_idx & 5 ) /* qpel interpolation needed /
     {
         pixel *src2 = src[x264_hpel_ref1[qpel_idx]] + offset + ((mvx&3) == 3);
         pixel_avg( dst, *i_dst_stride, src1, i_src_stride,
@@ -286,7 +288,11 @@ static pixel *get_ref( pixel *dst,   intptr_t *i_dst_stride,
     {
         *i_dst_stride = i_src_stride;
         return src1;
-    }
+    }*/
+	mvx >>= 1;
+	mvy >>= 1;
+	*i_dst_stride = i_src_stride;
+	return src[(mvx & 1) | ((mvy & 1) << 1)] + ((mvy >> 1) * i_src_stride) + (mvx >> 1);
 }
 
 /* full chroma mc (ie until 1/8 pixel)*/

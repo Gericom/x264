@@ -803,16 +803,28 @@ void x264_me_search_ref( x264_t *h, x264_me_t *m, int16_t (*mvc)[2], int i_mvc, 
 	m->mv[1] &= ~1;
 
 	//make sure we stay within the frame
-	if (m->mv[0] < h->mb.mv_min[0])
+	/*if (m->mv[0] < h->mb.mv_min[0])
 		m->mv[0] = h->mb.mv_min[0];
 	if (m->mv[0] > h->mb.mv_max[0])
 		m->mv[0] = h->mb.mv_max[0];
 	if (m->mv[1] < h->mb.mv_min[1])
 		m->mv[1] = h->mb.mv_min[1];
 	if (m->mv[1] > h->mb.mv_max[1])
-		m->mv[1] = h->mb.mv_max[1];
+		m->mv[1] = h->mb.mv_max[1];*/
 }
 #undef COST_MV
+
+void x264_me_fix_mv(x264_t *h, int x, int y, int width, int height, int16_t* mv)
+{
+	if (mv[0] < h->mb.mv_min[0] - (x << 2))
+		mv[0] = h->mb.mv_min[0] - (x << 2);
+	if (mv[0] > h->mb.mv_max[0] + ((16 - width - x) << 2))
+		mv[0] = h->mb.mv_max[0] + ((16 - width - x) << 2);
+	if (mv[1] < h->mb.mv_min[1] - (y << 2))
+		mv[1] = h->mb.mv_min[1] - (y << 2);
+	if (mv[1] > h->mb.mv_max[1] + ((16 - height - y) << 2))
+		mv[1] = h->mb.mv_max[1] + ((16 - height - y) << 2);
+}
 
 void x264_me_refine_qpel( x264_t *h, x264_me_t *m )
 {

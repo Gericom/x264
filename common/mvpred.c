@@ -29,7 +29,8 @@
 
 void x264_mb_predict_mv( x264_t *h, int i_list, int idx, int i_width, int16_t mvp[2] )
 {
-    const int i8 = x264_scan8[idx];
+	x264_mb_predict_mv_16x16(h, 0, 0, mvp);
+    /*const int i8 = x264_scan8[idx];
     const int i_ref= h->mb.cache.ref[i_list][i8];
     int     i_refa = h->mb.cache.ref[i_list][i8 - 1];
     int16_t *mv_a  = h->mb.cache.mv[i_list][i8 - 1];
@@ -123,12 +124,12 @@ median:
     else if( i_refb == -2 && i_refc == -2 && i_refa != -2 )
         CP32( mvp, mv_a );
     else
-        goto median;
+        goto median;*/
 }
 
 void x264_mb_predict_mv_16x16( x264_t *h, int i_list, int i_ref, int16_t mvp[2] )
 {
-    int     i_refa = h->mb.cache.ref[i_list][X264_SCAN8_0 - 1];
+    /*int     i_refa = h->mb.cache.ref[i_list][X264_SCAN8_0 - 1];
     int16_t *mv_a  = h->mb.cache.mv[i_list][X264_SCAN8_0 - 1];
     int     i_refb = h->mb.cache.ref[i_list][X264_SCAN8_0 - 8];
     int16_t *mv_b  = h->mb.cache.mv[i_list][X264_SCAN8_0 - 8];
@@ -159,7 +160,27 @@ median:
     else if( i_refb == -2 && i_refc == -2 && i_refa != -2 )
         CP32( mvp, mv_a );
     else
-        goto median;
+        goto median;*/
+	int ax = h->mb.cache.mv[0][x264_scan8[10] - 1][0];
+	if (h->mb.cache.ref[0][x264_scan8[10] - 1] < 0)
+		ax = 0;
+	int bx = h->mb.cache.mv[0][x264_scan8[0] - 8 + 3][0];
+	if (h->mb.cache.ref[0][x264_scan8[0] - 8 + 3] < 0)
+		bx = 0;
+	int cx = h->mb.cache.mv[0][x264_scan8[0] - 8 + 4][0];
+	if (h->mb.cache.ref[0][x264_scan8[0] - 8 + 4] < 0)
+		cx = 0;
+	mvp[0] = x264_median(ax, bx, cx);
+	int ay = h->mb.cache.mv[0][x264_scan8[10] - 1][1];
+	if (h->mb.cache.ref[0][x264_scan8[10] - 1] < 0)
+		ay = 0;
+	int by = h->mb.cache.mv[0][x264_scan8[0] - 8 + 3][1];
+	if (h->mb.cache.ref[0][x264_scan8[0] - 8 + 3] < 0)
+		by = 0;
+	int cy = h->mb.cache.mv[0][x264_scan8[0] - 8 + 4][1];
+	if (h->mb.cache.ref[0][x264_scan8[0] - 8 + 4] < 0)
+		cy = 0;
+	mvp[1] = x264_median(ay, by, cy);
 }
 
 

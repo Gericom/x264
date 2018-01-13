@@ -966,105 +966,23 @@ static const uint8_t REV_byte_1165C4[] =
 	0, 2, 4, 6, 1, 7, 15, 10, 3, 14, 8, 13, 5, 11, 12, 9,
 };
 
-//static int mvcache[256 / 16 + 2][2];
-//static int lastFrame = -1;
-
 static void encode_p_block(x264_t *h)
 {
-	/*if (h->sh.i_frame_num != lastFrame)
-	{
-		memset(mvcache, 0, sizeof(mvcache));
-		lastFrame = h->sh.i_frame_num;
-	}
-	int vals[6];
-	vals[0] = mvcache[h->mb.i_mb_x][0];
-	vals[1] = mvcache[h->mb.i_mb_x][1];
-	vals[2] = mvcache[h->mb.i_mb_x + 1][0];
-	vals[3] = mvcache[h->mb.i_mb_x + 1][1];
-	vals[4] = mvcache[h->mb.i_mb_x + 2][0];
-	vals[5] = mvcache[h->mb.i_mb_x + 2][1];
-	if (vals[0] > vals[2])
-	{
-		int tmp = vals[0];
-		vals[0] = vals[2];
-		vals[2] = tmp;
-	}
-	if (vals[2] > vals[4])
-	{
-		int tmp = vals[2];
-		vals[2] = vals[4];
-		vals[4] = tmp;
-	}
-	if (vals[0] > vals[2])
-	{
-		int tmp = vals[0];
-		vals[0] = vals[2];
-		vals[2] = tmp;
-	}
-	if (vals[1] > vals[3])
-	{
-		int tmp = vals[1];
-		vals[1] = vals[3];
-		vals[3] = tmp;
-	}
-	if (vals[3] > vals[5])
-	{
-		int tmp = vals[3];
-		vals[3] = vals[5];
-		vals[5] = tmp;
-	}
-	if (vals[1] > vals[3])
-	{
-		int tmp = vals[1];
-		vals[1] = vals[3];
-		vals[3] = tmp;
-	}
-	mvcache[h->mb.i_mb_x + 1][0] = 0;
-	mvcache[h->mb.i_mb_x + 1][1] = 0;*/
-	int ax = h->mb.cache.mv[0][x264_scan8[10] - 1][0];
-	if (h->mb.cache.ref[0][x264_scan8[10] - 1] < 0)
-		ax = 0;
-	int bx = h->mb.cache.mv[0][x264_scan8[0] - 8 + 3][0];
-	if (h->mb.cache.ref[0][x264_scan8[0] - 8 + 3] < 0)
-		bx = 0;
-	int cx = h->mb.cache.mv[0][x264_scan8[0] - 8 + 4][0];
-	if (h->mb.cache.ref[0][x264_scan8[0] - 8 + 4] < 0)
-		cx = 0;
-	int px = x264_median(ax, bx, cx) >> 1;
-	int ay = h->mb.cache.mv[0][x264_scan8[10] - 1][1];
-	if (h->mb.cache.ref[0][x264_scan8[10] - 1] < 0)
-		ay = 0;
-	int by = h->mb.cache.mv[0][x264_scan8[0] - 8 + 3][1];
-	if (h->mb.cache.ref[0][x264_scan8[0] - 8 + 3] < 0)
-		by = 0;
-	int cy = h->mb.cache.mv[0][x264_scan8[0] - 8 + 4][1];
-	if (h->mb.cache.ref[0][x264_scan8[0] - 8 + 4] < 0)
-		cy = 0;
-	int py = x264_median(ay, by, cy) >> 1;
 	bs_t *s = &h->out.bs;
 	if (h->mb.i_type == P_L0 || h->mb.i_type == P_8x8)
 	{
-		//int px = x264_median(h->mb.cache.mv[0][x264_scan8[15] - 4][0], h->mb.cache.mv[0][x264_scan8[0] - 5][0], h->mb.cache.mv[0][x264_scan8[0] - 4][0]);
-		//int py = x264_median(h->mb.cache.mv[0][x264_scan8[15] - 4][1], h->mb.cache.mv[0][x264_scan8[0] - 5][1], h->mb.cache.mv[0][x264_scan8[0] - 4][1]);
-		//int px = vals[2];//x264_median(h->mb.cache.mv[0][x264_scan8[0] - 1][0], h->mb.cache.mv[0][x264_scan8[0] - 8][0], h->mb.cache.mv[0][x264_scan8[0] - 8 + 4][0]);
-		//int py = vals[3];//x264_median(h->mb.cache.mv[0][x264_scan8[0] - 1][1], h->mb.cache.mv[0][x264_scan8[0] - 8][1], h->mb.cache.mv[0][x264_scan8[0] - 8 + 4][1]);
-		//if (px != newPx ||
-		//	py != newPy)
-		//{
-		//	while (1);
-		//}
-		//int16_t mv[2];
-		//x264_mb_predict_mv(h, 0, 0, 4, mv);
+		int16_t mv[2];
+		x264_mb_predict_mv(h, 0, 0, 0, mv);
+		mv[0] >>= 1;
+		mv[1] >>= 1;
 #if !RDO_SKIP_BS
 		int tmp = bs_pos(s);
 #endif
 		int lastMv[2];
-		mobi_encode_p_partition(h, 0, 16, 16, px, py, lastMv);
+		mobi_encode_p_partition(h, 0, 16, 16, mv[0], mv[1], lastMv);
 #if !RDO_SKIP_BS
 		h->stat.frame.i_mv_bits += bs_pos(s) - tmp;
 #endif
-		//mvcache[h->mb.i_mb_x + 1][0] = lastMv[0];
-		//mvcache[h->mb.i_mb_x + 1][1] = lastMv[1];
 		//which blocks are actually coded
 #if !RDO_SKIP_BS
 		tmp = bs_pos(s);
@@ -1108,20 +1026,10 @@ static void encode_p_block(x264_t *h)
 				{
 					bs_write1(s, 1);//don't subdivide into 4x4
 					h->stat.frame.i_mv_bits++;
-
 #if !RDO_SKIP_BS
 					int tmp = bs_pos(s);
 #endif			
-					//if (h->mb.cache.non_zero_count[x264_scan8[i8 * 4]])
-					//{
 					h->mb.cache.non_zero_count[x264_scan8[i8 * 4]] = encode_dct(h, h->dct.luma8x8[i8], 64);
-					//}
-					/*else
-					{
-					dctcoef zero[64] = { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-					encode_dct(h, zero, 64);
-					}*/
-
 #if !RDO_SKIP_BS
 					h->stat.frame.i_tex_bits += bs_pos(s) - tmp;
 #endif
@@ -1172,18 +1080,6 @@ static void encode_p_block(x264_t *h)
 #endif
 			}
 		}
-	}
-	else if (h->mb.i_type == P_SKIP)
-	{
-#if !RDO_SKIP_BS
-		int tmp = bs_pos(s);
-#endif			
-		int lastMv[2];
-		mobi_encode_p_partition(h, 0, 16, 16, px, py, lastMv);
-		bs_write_ue(s, REV_byte_116160[0]);
-#if !RDO_SKIP_BS
-		h->stat.frame.i_mv_bits += bs_pos(s) - tmp;
-#endif
 	}
 	else //if( IS_INTRA( i_mb_type ) )
 		encode_i_block(h);
@@ -1236,67 +1132,6 @@ void x264_macroblock_write_cavlc( x264_t *h )
 		encode_p_block(h);
 	else //if (h->sh.i_type == SLICE_TYPE_I)
 		encode_i_block(h);
-
-	return;
-
-
-    if( h->sh.i_type == SLICE_TYPE_P )
-        cavlc_mb_header_p( h, i_mb_type, chroma );
-   // else if( h->sh.i_type == SLICE_TYPE_B )
-    //    cavlc_mb_header_b( h, i_mb_type, chroma );
-    else //if( h->sh.i_type == SLICE_TYPE_I )
-        cavlc_mb_header_i( h, i_mb_type, 0, chroma );
-
-#if !RDO_SKIP_BS
-    i_mb_pos_tex = bs_pos( s );
-    h->stat.frame.i_mv_bits += i_mb_pos_tex - i_mb_pos_start;
-#endif
-
-    /* Coded block pattern */
-    if( i_mb_type != I_16x16 )
-        bs_write_ue( s, cbp_to_golomb[chroma][IS_INTRA(i_mb_type)][(h->mb.i_cbp_chroma << 4)|h->mb.i_cbp_luma] );
-
-    /* transform size 8x8 flag */
-    if( x264_mb_transform_8x8_allowed( h ) && h->mb.i_cbp_luma )
-        bs_write1( s, h->mb.b_transform_8x8 );
-
-    if( i_mb_type == I_16x16 )
-    {
-        cavlc_qp_delta( h );
-
-        /* DC Luma */
-        for( int p = 0; p < plane_count; p++ )
-        {
-            x264_cavlc_block_residual( h, DCT_LUMA_DC, LUMA_DC+p, h->dct.luma16x16_dc[p] );
-
-            /* AC Luma */
-            if( h->mb.i_cbp_luma )
-                for( int i = p*16; i < p*16+16; i++ )
-                    x264_cavlc_block_residual( h, DCT_LUMA_AC, i, h->dct.luma4x4[i]+1 );
-        }
-    }
-    else if( h->mb.i_cbp_luma | h->mb.i_cbp_chroma )
-    {
-        cavlc_qp_delta( h );
-        cavlc_macroblock_luma_residual( h, plane_count );
-    }
-    if( h->mb.i_cbp_chroma )
-    {
-        /* Chroma DC residual present */
-        x264_cavlc_block_residual( h, DCT_CHROMA_DC, CHROMA_DC+0, h->dct.chroma_dc[0] );
-        x264_cavlc_block_residual( h, DCT_CHROMA_DC, CHROMA_DC+1, h->dct.chroma_dc[1] );
-        if( h->mb.i_cbp_chroma == 2 ) /* Chroma AC residual present */
-        {
-            int step = 8 << CHROMA_V_SHIFT;
-            for( int i = 16; i < 3*16; i += step )
-                for( int j = i; j < i+4; j++ )
-                    x264_cavlc_block_residual( h, DCT_CHROMA_AC, j, h->dct.luma4x4[j]+1 );
-        }
-    }
-
-#if !RDO_SKIP_BS
-    h->stat.frame.i_tex_bits += bs_pos(s) - i_mb_pos_tex;
-#endif
 }
 
 #if RDO_SKIP_BS
@@ -1324,18 +1159,6 @@ static int partition_size_cavlc( x264_t *h, int i8, int i_pixel )
     }
     else if( i_mb_type == P_L0 )
         cavlc_mvd( h, 0, 4*i8, 4>>b_8x16 );
-    else if( i_mb_type > B_DIRECT && i_mb_type < B_8x8 )
-    {
-        if( x264_mb_type_list_table[ i_mb_type ][0][!!i8] ) cavlc_mvd( h, 0, 4*i8, 4>>b_8x16 );
-        if( x264_mb_type_list_table[ i_mb_type ][1][!!i8] ) cavlc_mvd( h, 1, 4*i8, 4>>b_8x16 );
-    }
-    else //if( i_mb_type == B_8x8 )
-    {
-        if( x264_mb_partition_listX_table[0][ h->mb.i_sub_partition[i8] ] )
-            cavlc_mvd( h, 0, 4*i8, 2 );
-        if( x264_mb_partition_listX_table[1][ h->mb.i_sub_partition[i8] ] )
-            cavlc_mvd( h, 1, 4*i8, 2 );
-    }
 
     for( j = (i_pixel < PIXEL_8x8); j >= 0; j-- )
     {
@@ -1391,9 +1214,20 @@ static int partition_i8x8_size_cavlc( x264_t *h, int i8, int i_mode )
 {
     int plane_count = CHROMA444 ? 3 : 1;
     h->out.bs.i_bits_encoded = cavlc_intra4x4_pred_size( h, 4*i8, i_mode );
-    bs_write_ue( &h->out.bs, cbp_to_golomb[!CHROMA444][1][(h->mb.i_cbp_chroma << 4)|h->mb.i_cbp_luma] );
-    for( int p = 0; p < plane_count; p++ )
-        cavlc_partition_luma_residual( h, i8, p );
+    //bs_write_ue( &h->out.bs, cbp_to_golomb[!CHROMA444][1][(h->mb.i_cbp_chroma << 4)|h->mb.i_cbp_luma] );
+	uint8_t mask =
+		(!!h->mb.cache.non_zero_count[x264_scan8[0 * 4]]) |
+		((!!h->mb.cache.non_zero_count[x264_scan8[1 * 4]]) << 1) |
+		((!!h->mb.cache.non_zero_count[x264_scan8[2 * 4]]) << 2) |
+		((!!h->mb.cache.non_zero_count[x264_scan8[3 * 4]]) << 3);
+	bs_write_ue(&h->out.bs, block_mask_to_golomb_table[(!!h->mb.cache.non_zero_count[x264_scan8[16 + 1 * 16]] << 5) | (!!h->mb.cache.non_zero_count[x264_scan8[16 + 0 * 16]] << 4) | mask]);
+	if (h->mb.cache.non_zero_count[x264_scan8[i8 * 4]])
+	{
+		bs_write1(&h->out.bs, 1);//don't subdivide into 4x4
+		h->mb.cache.non_zero_count[x264_scan8[i8 * 4]] = encode_dct(h, h->dct.luma8x8[i8], 64);
+	}	
+	//for( int p = 0; p < plane_count; p++ )
+    //    cavlc_partition_luma_residual( h, i8, p );
     return h->out.bs.i_bits_encoded;
 }
 
@@ -1401,15 +1235,17 @@ static int partition_i4x4_size_cavlc( x264_t *h, int i4, int i_mode )
 {
     int plane_count = CHROMA444 ? 3 : 1;
     h->out.bs.i_bits_encoded = cavlc_intra4x4_pred_size( h, i4, i_mode );
-    for( int p = 0; p < plane_count; p++ )
-        x264_cavlc_block_residual( h, DCT_LUMA_4x4, p*16+i4, h->dct.luma4x4[p*16+i4] );
+	if (h->mb.cache.non_zero_count[x264_scan8[i4]])
+		h->mb.cache.non_zero_count[x264_scan8[i4]] = encode_dct(h, h->dct.luma4x4[i4], 16);
+	//for( int p = 0; p < plane_count; p++ )
+    //    x264_cavlc_block_residual( h, DCT_LUMA_4x4, p*16+i4, h->dct.luma4x4[p*16+i4] );
     return h->out.bs.i_bits_encoded;
 }
 
 static int chroma_size_cavlc( x264_t *h )
 {
-    h->out.bs.i_bits_encoded = bs_size_ue( x264_mb_chroma_pred_mode_fix[h->mb.i_chroma_pred_mode] );
-    if( h->mb.i_cbp_chroma )
+	h->out.bs.i_bits_encoded = 3;//bs_size_ue( x264_mb_chroma_pred_mode_fix[h->mb.i_chroma_pred_mode] );
+    /*if( h->mb.i_cbp_chroma )
     {
         x264_cavlc_block_residual( h, DCT_CHROMA_DC, CHROMA_DC+0, h->dct.chroma_dc[0] );
         x264_cavlc_block_residual( h, DCT_CHROMA_DC, CHROMA_DC+1, h->dct.chroma_dc[1] );
@@ -1421,7 +1257,16 @@ static int chroma_size_cavlc( x264_t *h )
                 for( int j = i; j < i+4; j++ )
                     x264_cavlc_block_residual( h, DCT_CHROMA_AC, j, h->dct.luma4x4[j]+1 );
         }
-    }
+    }*/
+	//todo: write plane params here when implemented and mode == 2
+	for (int i = 0; i < 2; i++)
+	{
+		if (h->mb.cache.non_zero_count[x264_scan8[16 + i * 16]])
+		{
+			bs_write1(&h->out.bs, 1);//don't subdivide into 4x4
+			h->mb.cache.non_zero_count[x264_scan8[16 + i * 16]] = encode_dct(h, h->dct.luma8x8[4 + 4 * i], 64);
+		}
+	}
     return h->out.bs.i_bits_encoded;
 }
 #endif

@@ -73,6 +73,9 @@ void x264_me_refine_bidir_satd( x264_t *h, x264_me_t *m0, x264_me_t *m1, int i_w
 #define x264_rd_cost_part x264_template(rd_cost_part)
 uint64_t x264_rd_cost_part( x264_t *h, int i_lambda2, int i8, int i_pixel );
 
+#define x264_me_fix_mv x264_template(me_fix_mv)
+void x264_me_fix_mv(x264_t *h, int x, int y, int width, int height, int16_t* mv);
+
 #define COPY1_IF_LT(x,y)\
 if( (y) < (x) )\
     (x) = (y);

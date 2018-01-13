@@ -644,7 +644,7 @@ static ALWAYS_INLINE void macroblock_encode_internal( x264_t *h, int plane_count
         return;
     }*/
 
-    if(FALSE)//!h->mb.b_allow_skip )
+    if(TRUE)//!h->mb.b_allow_skip )
     {
         b_force_no_skip = 1;
         if( IS_SKIP(h->mb.i_type) )
