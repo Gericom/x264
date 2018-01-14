@@ -599,53 +599,57 @@ static void predict_4x4_hu_c( pixel *src )
  ****************************************************************************/
 
 #define PL(y) \
-    edge[14-y] = F2(SRC(-1,y-1), SRC(-1,y), SRC(-1,y+1));
+    edge[14-y] = SRC(-1,y);//F2(SRC(-1,y-1), SRC(-1,y), SRC(-1,y+1));
 #define PT(x) \
-    edge[16+x] = F2(SRC(x-1,-1), SRC(x,-1), SRC(x+1,-1));
+    edge[16+x] = SRC(x,-1);//F2(SRC(x-1,-1), SRC(x,-1), SRC(x+1,-1));
 
-static void predict_8x8_filter_c( pixel *src, pixel edge[36], int i_neighbor, int i_filters )
+static void predict_8x8_filter_c(pixel *src, pixel edge[36], int i_neighbor, int i_filters)
 {
-    /* edge[7..14] = l7..l0
-     * edge[15] = lt
-     * edge[16..31] = t0 .. t15
-     * edge[32] = t15 */
+	/* edge[7..14] = l7..l0
+	* edge[15] = lt
+	* edge[16..31] = t0 .. t15
+	* edge[32] = t15 */
 
-    int have_lt = i_neighbor & MB_TOPLEFT;
-    if( i_filters & MB_LEFT )
-    {
-        edge[15] = (SRC(0,-1) + 2*SRC(-1,-1) + SRC(-1,0) + 2) >> 2;
-        edge[14] = ((have_lt ? SRC(-1,-1) : SRC(-1,0))
-                 + 2*SRC(-1,0) + SRC(-1,1) + 2) >> 2;
-        PL(1) PL(2) PL(3) PL(4) PL(5) PL(6)
-        edge[6] =
-        edge[7] = (SRC(-1,6) + 3*SRC(-1,7) + 2) >> 2;
-    }
+	int have_lt = i_neighbor & MB_TOPLEFT;
+	if (i_filters & MB_LEFT)
+	{
+		/*edge[15] = (SRC(0,-1) + 2*SRC(-1,-1) + SRC(-1,0) + 2) >> 2;
+		edge[14] = ((have_lt ? SRC(-1,-1) : SRC(-1,0))
+		+ 2*SRC(-1,0) + SRC(-1,1) + 2) >> 2;*/
+		edge[15] = SRC(-1, -1);
+		edge[14] = SRC(-1, 0);
+		PL(1) PL(2) PL(3) PL(4) PL(5) PL(6)
+			edge[6] =
+			edge[7] = SRC(-1, 7);// (SRC(-1, 6) + 3 * SRC(-1, 7) + 2) >> 2;
+	}
 
-    if( i_filters & MB_TOP )
-    {
-        int have_tr = i_neighbor & MB_TOPRIGHT;
-        edge[16] = ((have_lt ? SRC(-1,-1) : SRC(0,-1))
-                 + 2*SRC(0,-1) + SRC(1,-1) + 2) >> 2;
-        PT(1) PT(2) PT(3) PT(4) PT(5) PT(6)
-        edge[23] = (SRC(6,-1) + 2*SRC(7,-1)
-                 + (have_tr ? SRC(8,-1) : SRC(7,-1)) + 2) >> 2;
+	if (i_filters & MB_TOP)
+	{
+		int have_tr = i_neighbor & MB_TOPRIGHT;
+		/*edge[16] = ((have_lt ? SRC(-1,-1) : SRC(0,-1))
+		+ 2*SRC(0,-1) + SRC(1,-1) + 2) >> 2;*/
+		edge[16] = SRC(0, -1);
+		PT(1) PT(2) PT(3) PT(4) PT(5) PT(6)
+			/*edge[23] = (SRC(6,-1) + 2*SRC(7,-1)
+			+ (have_tr ? SRC(8,-1) : SRC(7,-1)) + 2) >> 2;*/
+			edge[23] = SRC(7, -1);
 
-        if( i_filters & MB_TOPRIGHT )
-        {
-            if( have_tr )
-            {
-                PT(8) PT(9) PT(10) PT(11) PT(12) PT(13) PT(14)
-                edge[31] =
-                edge[32] = (SRC(14,-1) + 3*SRC(15,-1) + 2) >> 2;
-            }
-            else
-            {
-                MPIXEL_X4( edge+24 ) = PIXEL_SPLAT_X4( SRC(7,-1) );
-                MPIXEL_X4( edge+28 ) = PIXEL_SPLAT_X4( SRC(7,-1) );
-                edge[32] = SRC(7,-1);
-            }
-        }
-    }
+		if (i_filters & MB_TOPRIGHT)
+		{
+			if (have_tr)
+			{
+				PT(8) PT(9) PT(10) PT(11) PT(12) PT(13) PT(14)
+					edge[31] =
+					edge[32] = SRC(15, -1);// (SRC(14, -1) + 3 * SRC(15, -1) + 2) >> 2;
+			}
+			else
+			{
+				MPIXEL_X4(edge + 24) = PIXEL_SPLAT_X4(SRC(7, -1));
+				MPIXEL_X4(edge + 28) = PIXEL_SPLAT_X4(SRC(7, -1));
+				edge[32] = SRC(7, -1);
+			}
+		}
+	}
 }
 
 #undef PL
@@ -981,6 +985,8 @@ void x264_predict_8x8_init( int cpu, x264_predict8x8_t pf[12], x264_predict_8x8_
     pf[I_PRED_8x8_DC_TOP] = predict_8x8_dc_top_c;
     pf[I_PRED_8x8_DC_128] = predict_8x8_dc_128_c;
     *predict_filter       = predict_8x8_filter_c;
+
+	return;
 
 #if HAVE_MMX
     x264_predict_8x8_init_mmx( cpu, pf, predict_filter );
